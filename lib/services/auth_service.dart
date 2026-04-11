@@ -1,10 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 
 /// Wraps Firebase Auth — anonymous + Google sign-in with account linking.
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
 
   User? get currentUser => _auth.currentUser;
   Stream<User?> get authStateChanges => _auth.authStateChanges();
@@ -17,42 +16,97 @@ class AuthService {
   }
 
   /// Sign in with Google, linking to anonymous account if possible.
+  /// Uses FirebaseAuth's built-in OAuth flow (popup on web, Custom Tabs on
+  /// Android/iOS), which doesn't require a serverClientId to be configured.
   Future<User?> signInWithGoogle() async {
     try {
-      final googleUser = await _googleSignIn.authenticate();
-      final googleAuth = googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        idToken: googleAuth.idToken,
-      );
+      final provider = GoogleAuthProvider()
+        ..addScope('email')
+        ..addScope('profile');
 
-      // Try to link to existing anonymous account
+      Future<UserCredential> doSignIn() async {
+        if (kIsWeb) {
+          return _auth.signInWithPopup(provider);
+        }
+        return _auth.signInWithProvider(provider);
+      }
+
+      Future<UserCredential> doLink() async {
+        if (kIsWeb) {
+          return _auth.currentUser!.linkWithPopup(provider);
+        }
+        return _auth.currentUser!.linkWithProvider(provider);
+      }
+
       if (_auth.currentUser?.isAnonymous == true) {
         try {
-          final result =
-              await _auth.currentUser!.linkWithCredential(credential);
+          final result = await doLink();
           return result.user;
         } on FirebaseAuthException catch (e) {
-          if (e.code == 'credential-already-in-use') {
-            // Google account already exists — sign in directly
-            final result = await _auth.signInWithCredential(credential);
-            return result.user;
+          if (e.code != 'credential-already-in-use' &&
+              e.code != 'email-already-in-use') {
+            rethrow;
           }
-          rethrow;
+          // Fall through and sign in directly
         }
       }
 
-      // Not anonymous — just sign in
-      final result = await _auth.signInWithCredential(credential);
+      final result = await doSignIn();
       return result.user;
-    } on GoogleSignInException {
-      // User cancelled or other sign-in error
-      return null;
+    } on FirebaseAuthException catch (e) {
+      debugPrint('Firebase Google auth failed: ${e.code} ${e.message}');
+      if (e.code == 'web-context-canceled' ||
+          e.code == 'popup-closed-by-user' ||
+          e.code == 'user-cancelled') {
+        return null;
+      }
+      rethrow;
+    } catch (e) {
+      debugPrint('signInWithGoogle error: $e');
+      rethrow;
     }
+  }
+
+  /// Create a new account with email + password.
+  Future<User?> signUpWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    // If currently anonymous, link the credential to preserve the uid.
+    if (_auth.currentUser?.isAnonymous == true) {
+      try {
+        final cred = EmailAuthProvider.credential(email: email, password: password);
+        final result = await _auth.currentUser!.linkWithCredential(cred);
+        return result.user;
+      } on FirebaseAuthException catch (e) {
+        if (e.code != 'credential-already-in-use' &&
+            e.code != 'email-already-in-use') {
+          rethrow;
+        }
+        // Fall through to direct sign-up
+      }
+    }
+    final result = await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    return result.user;
+  }
+
+  /// Sign in with email + password.
+  Future<User?> signInWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    final result = await _auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    return result.user;
   }
 
   /// Sign out.
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
     await _auth.signOut();
     // Re-create anonymous session
     await signInAnonymously();

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import '../config/constants.dart';
 import '../models/level_data.dart';
 import 'xsb_parser.dart';
 
@@ -11,8 +12,7 @@ class LevelLoader {
 
   /// XSB level packs to load (filename without extension).
   static const List<String> _xsbPacks = [
-    'original',
-    'microban',
+    'cafe',
   ];
 
   /// Load a single level by ID.
@@ -60,7 +60,7 @@ class LevelLoader {
           xsbContent,
           collectionName: _packDisplayName(pack),
           startFloor: levels.length + 1,
-          defaultUndoLimit: 3,
+          defaultUndoLimit: GameConstants.defaultUndoLimit,
         );
         levels.addAll(packLevels);
       } catch (e) {
@@ -82,10 +82,8 @@ class LevelLoader {
   /// Display name for a pack file.
   static String _packDisplayName(String filename) {
     switch (filename) {
-      case 'original':
-        return 'Original & Extra';
-      case 'microban':
-        return 'Microban';
+      case 'cafe':
+        return 'Cat Café';
       default:
         return filename[0].toUpperCase() + filename.substring(1);
     }

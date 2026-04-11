@@ -1,6 +1,6 @@
 import '../../models/level_data.dart';
 
-/// Pure Sokoban game state — no rendering logic.
+/// Pure puzzle game state — no rendering logic.
 /// Immutable: every move creates a new GameState.
 class GameState {
   final List<List<CellType>> grid;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
@@ -13,7 +14,32 @@ class MenuScreen extends StatelessWidget {
     final authProvider = context.watch<AuthProvider>();
     final progressProvider = context.watch<ProgressProvider>();
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final shouldExit = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Exit Purrfect Spots?'),
+            content: const Text('Are you sure you want to leave the café?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Stay'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Exit'),
+              ),
+            ],
+          ),
+        );
+        if (shouldExit == true) {
+          await SystemNavigator.pop();
+        }
+      },
+      child: Scaffold(
       backgroundColor: CatCafeTheme.background,
       body: SafeArea(
         child: Center(
@@ -88,13 +114,6 @@ class MenuScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 _MenuButton(
-                  label: 'Leaderboard',
-                  icon: Icons.leaderboard_rounded,
-                  color: CatCafeTheme.secondary,
-                  onTap: () => context.go('/leaderboard'),
-                ),
-                const SizedBox(height: 16),
-                _MenuButton(
                   label: 'Settings',
                   icon: Icons.settings_rounded,
                   color: CatCafeTheme.accent,
@@ -104,6 +123,7 @@ class MenuScreen extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }

@@ -14,7 +14,7 @@ class MoveResult {
   });
 }
 
-/// Applies moves to GameState following Sokoban rules.
+/// Applies moves to GameState following puzzle rules.
 class MoveExecutor {
   /// Attempt to move in a direction.
   ///

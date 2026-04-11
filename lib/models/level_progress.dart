@@ -7,6 +7,7 @@ class LevelProgress {
   final int bestMoves;
   final int attempts;
   final int undosUsed;
+  final int? undosRemaining; // persisted per level across sessions
   final DateTime lastPlayedAt;
 
   const LevelProgress({
@@ -16,6 +17,7 @@ class LevelProgress {
     this.bestMoves = 0,
     this.attempts = 0,
     this.undosUsed = 0,
+    this.undosRemaining,
     required this.lastPlayedAt,
   });
 
@@ -26,6 +28,7 @@ class LevelProgress {
         'bestMoves': bestMoves,
         'attempts': attempts,
         'undosUsed': undosUsed,
+        'undosRemaining': undosRemaining,
         'lastPlayedAt': Timestamp.fromDate(lastPlayedAt),
       };
 
@@ -36,6 +39,7 @@ class LevelProgress {
         bestMoves: map['bestMoves'] as int? ?? 0,
         attempts: map['attempts'] as int? ?? 0,
         undosUsed: map['undosUsed'] as int? ?? 0,
+        undosRemaining: map['undosRemaining'] as int?,
         lastPlayedAt: (map['lastPlayedAt'] as Timestamp).toDate(),
       );
 
@@ -45,6 +49,7 @@ class LevelProgress {
     int? bestMoves,
     int? attempts,
     int? undosUsed,
+    int? undosRemaining,
     DateTime? lastPlayedAt,
   }) =>
       LevelProgress(
@@ -54,6 +59,7 @@ class LevelProgress {
         bestMoves: bestMoves ?? this.bestMoves,
         attempts: attempts ?? this.attempts,
         undosUsed: undosUsed ?? this.undosUsed,
+        undosRemaining: undosRemaining ?? this.undosRemaining,
         lastPlayedAt: lastPlayedAt ?? this.lastPlayedAt,
       );
 }

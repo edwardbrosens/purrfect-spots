@@ -14,6 +14,8 @@ import '../app.dart';
 import '../services/ad_service.dart';
 import '../services/level_loader.dart';
 import '../widgets/hud_overlay.dart';
+import '../widgets/category_complete_overlay.dart';
+import '../config/level_themes.dart';
 import 'result_screen.dart';
 
 class GameScreen extends StatefulWidget {
@@ -31,6 +33,7 @@ class _GameScreenState extends State<GameScreen> {
   final SwipeDetector _swipeDetector = SwipeDetector();
   AdService? _adService;
   bool _showResult = false;
+  bool _showCategoryComplete = false;
   bool _isLoading = true;
 
   @override
@@ -60,9 +63,13 @@ class _GameScreenState extends State<GameScreen> {
     if (!mounted) return;
 
     final gameProvider = context.read<GameProvider>();
+    final progressProvider = context.read<ProgressProvider>();
+    final storedRemaining =
+        progressProvider.getLevelProgress(level.id)?.undosRemaining;
 
     final game = CatCafeGame(
       levelData: level,
+      initialUndosRemaining: storedRemaining,
       onLevelComplete: _onLevelComplete,
       onMoveChanged: () {
         if (mounted) {
@@ -95,19 +102,28 @@ class _GameScreenState extends State<GameScreen> {
       moves: moves,
       stars: stars,
       undosUsed: undosUsed,
+      undosRemaining: _game!.undosRemaining,
       displayName: authProvider.displayName,
     );
 
-    if (_adService != null) {
-      // Show interstitial ad, then show result
-      _adService!.showInterstitial().then((_) {
-        if (mounted) {
+    // Wait a moment so the player can see the last cat settle
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      if (!mounted) return;
+      final isCategoryFinale = _levelData!.floor % 10 == 0;
+      void showNext() {
+        if (!mounted) return;
+        if (isCategoryFinale) {
+          setState(() => _showCategoryComplete = true);
+        } else {
           setState(() => _showResult = true);
         }
-      });
-    } else {
-      setState(() => _showResult = true);
-    }
+      }
+      if (_adService != null) {
+        _adService!.showInterstitial().then((_) => showNext());
+      } else {
+        showNext();
+      }
+    });
   }
 
   void _onReset() {
@@ -126,12 +142,14 @@ class _GameScreenState extends State<GameScreen> {
       if (earned && mounted) {
         final gameProvider = context.read<GameProvider>();
         gameProvider.addUndos(GameConstants.undosPerAd);
+        _persistUndos();
       }
     } else {
       // Ads disabled — grant undos for free during development
       if (mounted) {
         final gameProvider = context.read<GameProvider>();
         gameProvider.addUndos(GameConstants.undosPerAd);
+        _persistUndos();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('+3 undos (ads disabled)'),
@@ -140,6 +158,13 @@ class _GameScreenState extends State<GameScreen> {
         );
       }
     }
+  }
+
+  void _persistUndos() {
+    if (_levelData == null || _game == null) return;
+    context
+        .read<ProgressProvider>()
+        .saveUndosRemaining(_levelData!.id, _game!.undosRemaining);
   }
 
   @override
@@ -157,7 +182,34 @@ class _GameScreenState extends State<GameScreen> {
       );
     }
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final navContext = context;
+        final shouldLeave = await showDialog<bool>(
+          context: navContext,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Leave level?'),
+            content: const Text('Your progress on this level will be lost.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Keep playing'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Leave'),
+              ),
+            ],
+          ),
+        );
+        if (shouldLeave == true && navContext.mounted) {
+          _persistUndos();
+          navContext.go('/levels');
+        }
+      },
+      child: Scaffold(
       backgroundColor: CatCafeTheme.background,
       body: SafeArea(
         child: Stack(
@@ -197,6 +249,17 @@ class _GameScreenState extends State<GameScreen> {
               ),
             ),
 
+            // Category-complete full-screen celebration
+            if (_showCategoryComplete)
+              CategoryCompleteOverlay(
+                theme: themeForFloor(_levelData!.floor),
+                floor: _levelData!.floor,
+                onDismiss: () => setState(() {
+                  _showCategoryComplete = false;
+                  _showResult = true;
+                }),
+              ),
+
             // Result overlay
             if (_showResult)
               ResultScreen(
@@ -214,6 +277,7 @@ class _GameScreenState extends State<GameScreen> {
               ),
           ],
         ),
+      ),
       ),
     );
   }

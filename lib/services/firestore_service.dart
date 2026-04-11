@@ -22,6 +22,29 @@ class FirestoreService {
     return UserProfile.fromMap(doc.data()!);
   }
 
+  /// Pick a unique 4-digit tag (0000-9999) for a given username.
+  /// We just retry random numbers a few times — collisions are unlikely.
+  Future<int> reserveUsernameTag(String username) async {
+    final rng = DateTime.now().microsecondsSinceEpoch;
+    for (int attempt = 0; attempt < 20; attempt++) {
+      final tag = ((rng + attempt * 7919) % 10000).abs();
+      final key = '${username.toLowerCase()}#${tag.toString().padLeft(4, '0')}';
+      final ref = _db.collection('usernames').doc(key);
+      try {
+        final ok = await _db.runTransaction<bool>((tx) async {
+          final snap = await tx.get(ref);
+          if (snap.exists) return false;
+          tx.set(ref, {'taken': true, 'createdAt': FieldValue.serverTimestamp()});
+          return true;
+        });
+        if (ok) return tag;
+      } catch (_) {
+        // try next
+      }
+    }
+    throw Exception('Could not allocate a unique username tag, please try again.');
+  }
+
   // ── Level Progress ────────────────────────────────────────
 
   Future<void> saveLevelProgress(
@@ -44,6 +67,22 @@ class FirestoreService {
         .get();
     if (!doc.exists) return null;
     return LevelProgress.fromMap(doc.data()!);
+  }
+
+  Future<void> deleteAllProgress(String uid) async {
+    final col = _db.collection('users').doc(uid).collection('progress');
+    final snap = await col.get();
+    final batch = _db.batch();
+    for (final doc in snap.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
+    try {
+      await _db.collection('users').doc(uid).update({
+        'levelsCompleted': 0,
+        'totalStars': 0,
+      });
+    } catch (_) {}
   }
 
   Future<Map<String, LevelProgress>> getAllProgress(String uid) async {

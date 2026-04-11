@@ -4,7 +4,7 @@ class GameConstants {
 
   // Grid and tile
   static const double tileSize = 64.0;
-  static const int defaultUndoLimit = 3;
+  static const int defaultUndoLimit = 999;
   static const int undosPerAd = 3;
 
   // Ad cooldown (minimum seconds between interstitials)

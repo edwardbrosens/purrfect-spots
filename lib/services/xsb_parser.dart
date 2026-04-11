@@ -1,6 +1,6 @@
 import '../models/level_data.dart';
 
-/// Parses standard XSB/SOK format Sokoban levels into our LevelData format.
+/// Parses standard XSB/SOK format puzzle levels into our LevelData format.
 ///
 /// XSB format characters:
 ///   # = wall
@@ -81,7 +81,7 @@ class XsbParser {
     return levels;
   }
 
-  /// Check if a line looks like a Sokoban grid row.
+  /// Check if a line looks like a puzzle grid row.
   static bool _isGridLine(String line) {
     // Must contain at least one wall character
     if (!line.contains('#')) return false;

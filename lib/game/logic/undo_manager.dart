@@ -5,7 +5,8 @@ class UndoManager {
   final List<GameState> _history = [];
   int _undosRemaining;
 
-  UndoManager({required int undoLimit}) : _undosRemaining = undoLimit;
+  UndoManager({required int undoLimit, int? initialRemaining})
+      : _undosRemaining = initialRemaining ?? undoLimit;
 
   int get undosRemaining => _undosRemaining;
   bool get canUndo => _history.isNotEmpty && _undosRemaining > 0;

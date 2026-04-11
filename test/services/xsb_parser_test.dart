@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cat_cafe_sokoban/services/xsb_parser.dart';
+import 'package:purrfect_spots/services/xsb_parser.dart';
 
 void main() {
   group('XsbParser', () {

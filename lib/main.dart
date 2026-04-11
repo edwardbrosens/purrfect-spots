@@ -1,9 +1,8 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'app.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,23 +18,17 @@ void main() async {
   // Initialize Firebase
   bool firebaseReady = false;
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
     firebaseReady = true;
   } catch (e) {
     debugPrint('Firebase not configured yet. Run: flutterfire configure');
     debugPrint('The game will run in offline/local mode.');
   }
 
-  // Initialize AdMob (mobile only — not supported on web)
-  bool adsEnabled = false;
-  if (!kIsWeb) {
-    try {
-      await MobileAds.instance.initialize();
-      adsEnabled = true;
-    } catch (e) {
-      debugPrint('AdMob init failed: $e');
-    }
-  }
+  // AdMob disabled for now
+  const bool adsEnabled = false;
 
   runApp(CatCafeApp(firebaseReady: firebaseReady, adsEnabled: adsEnabled));
 }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'config/routes.dart';
 import 'config/theme.dart';
@@ -38,7 +40,53 @@ class CatCafeApp extends StatelessWidget {
         theme: CatCafeTheme.themeData,
         routerConfig: appRouter,
         debugShowCheckedModeBanner: false,
+        builder: (context, child) => _ExitGuard(child: child ?? const SizedBox()),
       ),
+    );
+  }
+}
+
+/// Intercepts root-level back gestures (Android back button / iOS edge-swipe)
+/// so the app doesn't quit by accident. If go_router can pop, it pops; otherwise
+/// the user is asked to confirm exit.
+class _ExitGuard extends StatelessWidget {
+  final Widget child;
+  const _ExitGuard({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final router = GoRouter.of(context);
+        if (router.canPop()) {
+          router.pop();
+          return;
+        }
+        final shouldExit = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Exit Purrfect Spots?'),
+            content: const Text('Are you sure you want to leave the café?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Stay'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Exit'),
+              ),
+            ],
+          ),
+        );
+        if (shouldExit == true) {
+          // Pop the root system route to background the app.
+          await SystemNavigator.pop();
+        }
+      },
+      child: child,
     );
   }
 }

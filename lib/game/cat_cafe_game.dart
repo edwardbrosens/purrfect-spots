@@ -19,6 +19,7 @@ class CatCafeGame extends FlameGame {
   GameState _gameState;
   final UndoManager _undoManager;
   late PlayerComponent _player;
+  late Board _board;
   List<CatComponent> _cats = [];
   bool _inputLocked = false;
 
@@ -26,8 +27,12 @@ class CatCafeGame extends FlameGame {
     required this.levelData,
     this.onLevelComplete,
     this.onMoveChanged,
+    int? initialUndosRemaining,
   })  : _gameState = GameState.fromLevel(levelData),
-        _undoManager = UndoManager(undoLimit: levelData.undoLimit);
+        _undoManager = UndoManager(
+          undoLimit: levelData.undoLimit,
+          initialRemaining: initialUndosRemaining,
+        );
 
   GameState get gameState => _gameState;
   UndoManager get undoManager => _undoManager;
@@ -53,20 +58,22 @@ class CatCafeGame extends FlameGame {
     _fitBoardToScreen(boardWidth, boardHeight);
 
     // Add the tile board
-    final board = Board(levelData: levelData);
-    world.add(board);
+    _board = Board(levelData: levelData);
+    world.add(_board);
 
     // Add cat components
     _cats = [];
     for (int i = 0; i < levelData.catStarts.length; i++) {
       final catPos = levelData.catStarts[i];
+      final onTarget = levelData.targetPositions.contains(catPos);
       final cat = CatComponent(
         position: Board.gridToPixel(catPos),
         catIndex: i,
-        isOnTarget: levelData.targetPositions.contains(catPos),
+        isOnTarget: onTarget,
       );
       _cats.add(cat);
       world.add(cat);
+      if (onTarget) _board.setCatOnTarget(catPos, true);
     }
 
     // Add player component
@@ -121,7 +128,12 @@ class CatCafeGame extends FlameGame {
     if (result.pushedCatIndex != null) {
       final catIndex = result.pushedCatIndex!;
       final cat = _cats[catIndex];
-      cat.moveTo(Board.gridToPixel(_gameState.catPositions[catIndex]));
+      final newPos = _gameState.catPositions[catIndex];
+      // Clear dent at old target (if any)
+      for (final t in levelData.targetPositions) {
+        _board.setCatOnTarget(t, _gameState.catPositions.contains(t));
+      }
+      cat.moveTo(Board.gridToPixel(newPos));
       cat.isOnTarget = _gameState.isCatOnTarget(catIndex);
       if (cat.isOnTarget) {
         cat.settle();
@@ -160,6 +172,9 @@ class CatCafeGame extends FlameGame {
         _cats[i].unsettle(); // Wake up — no longer on cushion
       }
     }
+    for (final t in levelData.targetPositions) {
+      _board.setCatOnTarget(t, _gameState.catPositions.contains(t));
+    }
 
     onMoveChanged?.call();
     return true;
@@ -178,6 +193,9 @@ class CatCafeGame extends FlameGame {
       final onTarget = levelData.targetPositions.contains(levelData.catStarts[i]);
       _cats[i].isOnTarget = onTarget;
       if (!onTarget) _cats[i].unsettle();
+    }
+    for (final t in levelData.targetPositions) {
+      _board.setCatOnTarget(t, _gameState.catPositions.contains(t));
     }
 
     _inputLocked = false;

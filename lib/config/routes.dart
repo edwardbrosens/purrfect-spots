@@ -6,6 +6,7 @@ import '../screens/level_select_screen.dart';
 import '../screens/game_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/leaderboard_screen.dart';
+import '../screens/account_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/',
@@ -36,6 +37,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/leaderboard',
       builder: (context, state) => const LeaderboardScreen(),
+    ),
+    GoRoute(
+      path: '/account',
+      builder: (context, state) => const AccountScreen(),
     ),
   ],
 );

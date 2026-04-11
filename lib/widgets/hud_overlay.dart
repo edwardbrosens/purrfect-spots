@@ -57,7 +57,7 @@ class HudOverlay extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  '${floorNumber}F - $levelName',
+                  'Level $floorNumber - $levelName',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,

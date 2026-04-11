@@ -20,17 +20,27 @@ class ProgressProvider extends ChangeNotifier {
   Map<String, LevelProgress> get progress => Map.unmodifiable(_progress);
 
   /// Initialize with a user ID and load progress.
+  /// Safe to call again when the signed-in user changes.
   Future<void> initialize(String uid) async {
     _uid = uid;
+    _progress.clear();
 
-    // Always try local cache first
-    await _loadFromLocal();
+    // Always try local cache first (keyed per user so accounts don't leak)
+    await _loadFromLocal(uid);
 
-    // Then try Firestore if available
+    // Then try Firestore if available — cloud is source of truth when present
     if (firebaseReady) {
       try {
         final cloudProgress = await _firestoreService.getAllProgress(uid);
-        _progress.addAll(cloudProgress);
+        if (cloudProgress.isNotEmpty) {
+          _progress
+            ..clear()
+            ..addAll(cloudProgress);
+          // Refresh local cache from cloud
+          for (final entry in cloudProgress.entries) {
+            await _saveToLocal(entry.key, entry.value);
+          }
+        }
       } catch (e) {
         debugPrint('Firestore load failed, using local cache: $e');
       }
@@ -57,12 +67,32 @@ class ProgressProvider extends ChangeNotifier {
     return floor <= 1;
   }
 
+  /// Persist the remaining undos for a level (e.g. after watching an ad
+  /// or leaving the level mid-play). Does NOT mark the level complete.
+  Future<void> saveUndosRemaining(String levelId, int remaining) async {
+    final existing = _progress[levelId];
+    final updated = (existing ??
+            LevelProgress(levelId: levelId, lastPlayedAt: DateTime.now()))
+        .copyWith(undosRemaining: remaining, lastPlayedAt: DateTime.now());
+    _progress[levelId] = updated;
+    await _saveToLocal(levelId, updated);
+    if (firebaseReady && _uid != null) {
+      try {
+        await _firestoreService.saveLevelProgress(_uid!, updated);
+      } catch (e) {
+        debugPrint('Failed to sync undosRemaining: $e');
+      }
+    }
+    notifyListeners();
+  }
+
   /// Save level completion.
   Future<void> saveLevelComplete({
     required String levelId,
     required int moves,
     required int stars,
     required int undosUsed,
+    required int undosRemaining,
     required String displayName,
   }) async {
     final existing = _progress[levelId];
@@ -81,6 +111,7 @@ class ProgressProvider extends ChangeNotifier {
           : moves,
       attempts: attempts,
       undosUsed: undosUsed,
+      undosRemaining: undosRemaining,
       lastPlayedAt: DateTime.now(),
     );
 
@@ -125,39 +156,82 @@ class ProgressProvider extends ChangeNotifier {
     _progress[levelId] = newProgress;
   }
 
+  /// Delete ALL progress for the current user — local cache and cloud.
+  Future<void> resetAllProgress() async {
+    _progress.clear();
+    notifyListeners();
+
+    // Wipe this user's local keys
+    final prefs = await SharedPreferences.getInstance();
+    if (_uid != null) {
+      final prefix = _prefix(_uid!);
+      final toDelete =
+          prefs.getKeys().where((k) => k.startsWith(prefix)).toList();
+      for (final k in toDelete) {
+        await prefs.remove(k);
+      }
+    }
+
+    // Wipe Firestore docs
+    if (firebaseReady && _uid != null) {
+      try {
+        await _firestoreService.deleteAllProgress(_uid!);
+      } catch (e) {
+        debugPrint('Failed to wipe cloud progress: $e');
+      }
+    }
+  }
+
   int get totalStars =>
       _progress.values.fold<int>(0, (total, p) => total + p.stars);
 
   int get levelsCompleted =>
       _progress.values.where((p) => p.completed).length;
 
-  // ── Local Cache ──────────────────────────────────────────
+  // ── Local Cache (keyed per user so sign-in/out doesn't leak state) ──
+
+  String _prefix(String uid) => 'progress_${uid}_';
 
   Future<void> _saveToLocal(String levelId, LevelProgress progress) async {
+    if (_uid == null) return;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('progress_${levelId}_completed', progress.completed);
-    await prefs.setInt('progress_${levelId}_stars', progress.stars);
-    await prefs.setInt('progress_${levelId}_bestMoves', progress.bestMoves);
-    await prefs.setInt('progress_${levelId}_attempts', progress.attempts);
+    final p = '${_prefix(_uid!)}$levelId';
+    await prefs.setBool('${p}_completed', progress.completed);
+    await prefs.setInt('${p}_stars', progress.stars);
+    await prefs.setInt('${p}_bestMoves', progress.bestMoves);
+    await prefs.setInt('${p}_attempts', progress.attempts);
+    await prefs.setInt('${p}_undosUsed', progress.undosUsed);
+    if (progress.undosRemaining != null) {
+      await prefs.setInt('${p}_undosRemaining', progress.undosRemaining!);
+    }
+    await prefs.setInt(
+        '${p}_lastPlayedAt', progress.lastPlayedAt.millisecondsSinceEpoch);
   }
 
-  Future<void> _loadFromLocal() async {
+  Future<void> _loadFromLocal(String uid) async {
     final prefs = await SharedPreferences.getInstance();
-    final keys = prefs.getKeys().where((k) => k.startsWith('progress_'));
+    final prefix = _prefix(uid);
+    final keys = prefs.getKeys().where((k) => k.startsWith(prefix));
     final levelIds = <String>{};
     for (final key in keys) {
-      final match = RegExp(r'progress_(.+?)_').firstMatch(key);
-      if (match != null) levelIds.add(match.group(1)!);
+      final rest = key.substring(prefix.length);
+      final idx = rest.lastIndexOf('_');
+      if (idx > 0) levelIds.add(rest.substring(0, idx));
     }
 
     for (final levelId in levelIds) {
+      final p = '$prefix$levelId';
       _progress[levelId] = LevelProgress(
         levelId: levelId,
-        completed: prefs.getBool('progress_${levelId}_completed') ?? false,
-        stars: prefs.getInt('progress_${levelId}_stars') ?? 0,
-        bestMoves: prefs.getInt('progress_${levelId}_bestMoves') ?? 0,
-        attempts: prefs.getInt('progress_${levelId}_attempts') ?? 0,
-        lastPlayedAt: DateTime.now(),
+        completed: prefs.getBool('${p}_completed') ?? false,
+        stars: prefs.getInt('${p}_stars') ?? 0,
+        bestMoves: prefs.getInt('${p}_bestMoves') ?? 0,
+        attempts: prefs.getInt('${p}_attempts') ?? 0,
+        undosUsed: prefs.getInt('${p}_undosUsed') ?? 0,
+        undosRemaining: prefs.getInt('${p}_undosRemaining'),
+        lastPlayedAt: DateTime.fromMillisecondsSinceEpoch(
+            prefs.getInt('${p}_lastPlayedAt') ??
+                DateTime.now().millisecondsSinceEpoch),
       );
     }
   }

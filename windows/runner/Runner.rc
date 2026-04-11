@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.catcafe" "\0"
-            VALUE "FileDescription", "cat_cafe_sokoban" "\0"
+            VALUE "FileDescription", "purrfect_spots" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "cat_cafe_sokoban" "\0"
+            VALUE "InternalName", "purrfect_spots" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.catcafe. All rights reserved." "\0"
-            VALUE "OriginalFilename", "cat_cafe_sokoban.exe" "\0"
-            VALUE "ProductName", "cat_cafe_sokoban" "\0"
+            VALUE "OriginalFilename", "purrfect_spots.exe" "\0"
+            VALUE "ProductName", "purrfect_spots" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

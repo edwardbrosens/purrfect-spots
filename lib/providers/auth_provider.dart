@@ -4,6 +4,9 @@ import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../models/user_profile.dart';
 
+// Re-export so screens that import this provider get UserProfile too if needed.
+export '../models/user_profile.dart';
+
 class AuthProvider extends ChangeNotifier {
   final bool firebaseReady;
 
@@ -79,17 +82,94 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> signInWithGoogle() async {
-    if (!firebaseReady) return;
+  Future<String?> signInWithGoogle({String? username}) async {
+    if (!firebaseReady) return 'Firebase not ready';
 
     _isLoading = true;
     notifyListeners();
 
     try {
-      await _authService.signInWithGoogle();
+      final user = await _authService.signInWithGoogle();
+      if (user == null) return 'Sign-in cancelled';
+      final name = (username != null && username.trim().isNotEmpty)
+          ? username.trim()
+          : (user.displayName ?? user.email?.split('@').first ?? 'Cat Lover');
+      await _ensureProfile(user, name, 'google');
+      return null;
+    } on FirebaseAuthException catch (e) {
+      return e.message ?? e.code;
+    } catch (e) {
+      return e.toString();
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<String?> signUpWithEmail({
+    required String email,
+    required String password,
+    required String username,
+  }) async {
+    if (!firebaseReady) return 'Firebase not ready';
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final user = await _authService.signUpWithEmail(email: email, password: password);
+      if (user != null) {
+        await _ensureProfile(user, username.trim(), 'password');
+      }
+      return null;
+    } on FirebaseAuthException catch (e) {
+      return e.message ?? e.code;
+    } catch (e) {
+      return e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String?> signInWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    if (!firebaseReady) return 'Firebase not ready';
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _authService.signInWithEmail(email: email, password: password);
+      return null;
+    } on FirebaseAuthException catch (e) {
+      return e.message ?? e.code;
+    } catch (e) {
+      return e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _ensureProfile(User user, String username, String provider) async {
+    try {
+      var existing = await _firestoreService.getUser(user.uid);
+      if (existing != null && existing.usernameTag != null) {
+        _profile = existing;
+        return;
+      }
+      final tag = await _firestoreService.reserveUsernameTag(username);
+      final profile = UserProfile(
+        uid: user.uid,
+        displayName: username,
+        usernameTag: tag,
+        avatarUrl: user.photoURL,
+        authProvider: provider,
+        createdAt: existing?.createdAt ?? DateTime.now(),
+      );
+      await _firestoreService.createOrUpdateUser(profile);
+      _profile = profile;
+    } catch (e) {
+      debugPrint('ensureProfile failed: $e');
     }
   }
 

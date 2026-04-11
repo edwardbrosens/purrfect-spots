@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../providers/auth_provider.dart';
+import '../providers/progress_provider.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -49,38 +50,25 @@ class SettingsScreen extends StatelessWidget {
                         : 'Signed in with Google',
                   ),
                 ),
-                if (authProvider.isAnonymous)
-                  Padding(
-                    padding:
-                        const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: authProvider.isLoading
-                            ? null
-                            : () => authProvider.signInWithGoogle(),
-                        icon: const Icon(Icons.login_rounded),
-                        label: const Text('Sign in with Google'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: CatCafeTheme.secondary,
-                          foregroundColor: CatCafeTheme.darkText,
-                        ),
-                      ),
-                    ),
-                  )
-                else
-                  Padding(
-                    padding:
-                        const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: () => authProvider.signOut(),
-                        icon: const Icon(Icons.logout_rounded),
-                        label: const Text('Sign Out'),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => context.go('/account'),
+                      icon: Icon(authProvider.isAnonymous
+                          ? Icons.login_rounded
+                          : Icons.manage_accounts_rounded),
+                      label: Text(authProvider.isAnonymous
+                          ? 'Sign in / Sign up'
+                          : 'Manage account'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: CatCafeTheme.secondary,
+                        foregroundColor: CatCafeTheme.darkText,
                       ),
                     ),
                   ),
+                ),
               ],
             ),
           ),
@@ -109,6 +97,66 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Danger zone — reset personal progress
+          _SectionHeader(title: 'Danger zone'),
+          Card(
+            color: CatCafeTheme.surface,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Reset all progress?'),
+                        content: const Text(
+                          'This will permanently delete your stars, best '
+                          'moves, undos, and every completed level on this '
+                          'account. This cannot be undone.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(ctx).pop(false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(ctx).pop(true),
+                            style: TextButton.styleFrom(
+                                foregroundColor: Colors.red),
+                            child: const Text('Reset everything'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm != true) return;
+                    if (!context.mounted) return;
+                    await context.read<ProgressProvider>().resetAllProgress();
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Progress reset.'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.delete_forever_rounded,
+                      color: Colors.red),
+                  label: const Text('Reset all progress',
+                      style: TextStyle(color: Colors.red)),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.red),
+                  ),
+                ),
+              ),
             ),
           ),
 

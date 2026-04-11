@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cat_cafe_sokoban/models/level_data.dart';
-import 'package:cat_cafe_sokoban/game/logic/game_state.dart';
-import 'package:cat_cafe_sokoban/game/logic/move_executor.dart';
-import 'package:cat_cafe_sokoban/game/logic/undo_manager.dart';
+import 'package:purrfect_spots/models/level_data.dart';
+import 'package:purrfect_spots/game/logic/game_state.dart';
+import 'package:purrfect_spots/game/logic/move_executor.dart';
+import 'package:purrfect_spots/game/logic/undo_manager.dart';
 
 LevelData _createTestLevel(List<String> grid) {
   return LevelData.fromJson({
