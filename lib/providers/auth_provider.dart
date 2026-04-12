@@ -96,6 +96,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       final user = await _authService.signInWithGoogle();
       if (user == null) return 'Sign-in cancelled';
+      _user = user; // Update immediately so uid is correct downstream
       final name = (username != null && username.trim().isNotEmpty)
           ? username.trim()
           : (user.displayName ?? user.email?.split('@').first ?? 'Cat Lover');
@@ -143,7 +144,8 @@ class AuthProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      await _authService.signInWithEmail(email: email, password: password);
+      final user = await _authService.signInWithEmail(email: email, password: password);
+      if (user != null) _user = user;
       return null;
     } on FirebaseAuthException catch (e) {
       return e.message ?? e.code;
