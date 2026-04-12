@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../config/constants.dart';
@@ -95,20 +96,38 @@ class AdService {
   Future<bool> showRewarded() async {
     if (_rewardedAd == null) return false;
 
+    final completer = Completer<bool>();
     bool earned = false;
+
+    _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
+      onAdDismissedFullScreenContent: (ad) {
+        ad.dispose();
+        _rewardedAd = null;
+        loadRewarded(); // Pre-load next one
+        if (!completer.isCompleted) completer.complete(earned);
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        ad.dispose();
+        _rewardedAd = null;
+        loadRewarded();
+        if (!completer.isCompleted) completer.complete(false);
+      },
+    );
+
     await _rewardedAd!.show(
       onUserEarnedReward: (ad, reward) {
         earned = true;
       },
     );
-    return earned;
+    return completer.future;
   }
 
   bool get isInterstitialReady => _interstitialAd != null;
   bool get isRewardedReady => _rewardedAd != null;
 
-  /// Initialize and pre-load all ads.
-  void initialize() {
+  /// Initialize the SDK and pre-load all ads.
+  Future<void> initialize() async {
+    await MobileAds.instance.initialize();
     loadInterstitial();
     loadRewarded();
   }

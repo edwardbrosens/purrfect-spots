@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../models/user_profile.dart';
@@ -33,6 +34,10 @@ class AuthProvider extends ChangeNotifier {
   String get uid => _user?.uid ?? _offlineUid;
   String get displayName =>
       _profile?.displayName ?? _user?.displayName ?? 'Cat Lover';
+  int get undosRemaining => _profile?.undosRemaining ?? 10;
+  bool get isPremium => _profile?.isPremium ?? false;
+  bool get showAds => _profile?.showAds ?? true;
+  bool get adsDisabled => _profile?.adsDisabled ?? false;
 
   /// Initialize auth state — call once on app start.
   Future<void> initialize() async {
@@ -170,6 +175,54 @@ class AuthProvider extends ChangeNotifier {
       _profile = profile;
     } catch (e) {
       debugPrint('ensureProfile failed: $e');
+    }
+  }
+
+  /// Update the global undo count (after using an undo or earning more).
+  Future<void> setUndosRemaining(int count) async {
+    if (_profile == null) return;
+    _profile = _profile!.copyWith(undosRemaining: count);
+    notifyListeners();
+
+    // Save locally
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('undos_${_profile!.uid}', count);
+
+    // Sync to Firestore
+    if (firebaseReady) {
+      try {
+        await _firestoreService.updateUndosRemaining(_profile!.uid, count);
+      } catch (e) {
+        debugPrint('Failed to sync undos to cloud: $e');
+      }
+    }
+  }
+
+  /// Add undos (e.g. from watching a rewarded ad).
+  Future<void> addUndos(int count) async {
+    await setUndosRemaining(undosRemaining + count);
+  }
+
+  /// Spend one undo.
+  Future<void> spendUndo() async {
+    if (undosRemaining > 0) {
+      await setUndosRemaining(undosRemaining - 1);
+    }
+  }
+
+  /// Activate premium subscription (called after verified purchase).
+  Future<void> activatePremium() async {
+    if (_profile == null) return;
+    final until = DateTime.now().add(const Duration(days: 31));
+    _profile = _profile!.copyWith(premiumUntil: until);
+    notifyListeners();
+
+    if (firebaseReady) {
+      try {
+        await _firestoreService.createOrUpdateUser(_profile!);
+      } catch (e) {
+        debugPrint('Failed to sync premium status: $e');
+      }
     }
   }
 

@@ -8,9 +8,12 @@ class CatCafeTheme {
   // Primary palette
   static const Color primary = Color(0xFFE8A87C); // warm peach
   static const Color secondary = Color(0xFF85CDCA); // soft teal
-  static const Color accent = Color(0xFFD4A5A5); // dusty rose
-  static const Color background = Color(0xFFF5EDE3); // warm cream
-  static const Color surface = Color(0xFFFFF1E6); // lighter cream
+  static const Color accent = Color(0xFFEA8C8C); // warm coral-pink
+  static const Color background = Color(0xFFFFF5F0); // very soft warm pink
+  static const Color surface = Color(0xFFFFFBF8); // near-white cream
+  static const Color cardBorder = Color(0xFFEDE0D8); // subtle warm border for cards
+  static const Color lockedTile = Color(0xFFF0EAE4); // light warm gray for locked levels
+  static const Color pinkAccent = Color(0xFFEC8B8B); // coral pink for undo button and active level tiles
   static const Color darkText = Color(0xFF4A3728); // coffee brown
   static const Color lightText = Color(0xFFF5E6D3); // latte
   static const Color star = Color(0xFFFFD700); // gold

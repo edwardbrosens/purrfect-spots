@@ -20,8 +20,19 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const MenuScreen(),
     ),
     GoRoute(
+      path: '/levels/:categoryIndex',
+      builder: (context, state) {
+        final categoryIndex =
+            int.tryParse(state.pathParameters['categoryIndex'] ?? '0') ?? 0;
+        return LevelSelectScreen(
+            key: ValueKey('levels_$categoryIndex'),
+            categoryIndex: categoryIndex);
+      },
+    ),
+    GoRoute(
       path: '/levels',
-      builder: (context, state) => const LevelSelectScreen(),
+      builder: (context, state) =>
+          const LevelSelectScreen(key: ValueKey('levels_0'), categoryIndex: 0),
     ),
     GoRoute(
       path: '/game/:levelId',

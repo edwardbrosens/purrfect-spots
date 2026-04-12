@@ -7,6 +7,7 @@ import 'config/theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/game_provider.dart';
 import 'providers/progress_provider.dart';
+import 'services/purchase_service.dart';
 
 /// Simple config object provided to the widget tree.
 class AppConfig {
@@ -34,6 +35,7 @@ class CatCafeApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => GameProvider()),
         ChangeNotifierProvider(
             create: (_) => ProgressProvider(firebaseReady: firebaseReady)),
+        ChangeNotifierProvider(create: (_) => PurchaseService()),
       ],
       child: MaterialApp.router(
         title: 'Purrfect Spots',

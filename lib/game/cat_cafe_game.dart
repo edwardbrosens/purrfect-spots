@@ -28,10 +28,12 @@ class CatCafeGame extends FlameGame {
     this.onLevelComplete,
     this.onMoveChanged,
     int? initialUndosRemaining,
+    bool unlimitedUndos = false,
   })  : _gameState = GameState.fromLevel(levelData),
         _undoManager = UndoManager(
           undoLimit: levelData.undoLimit,
           initialRemaining: initialUndosRemaining,
+          unlimited: unlimitedUndos,
         );
 
   GameState get gameState => _gameState;
@@ -183,7 +185,7 @@ class CatCafeGame extends FlameGame {
   /// Reset the level to initial state.
   void resetLevel() {
     _gameState = GameState.fromLevel(levelData);
-    _undoManager.reset(undoLimit: levelData.undoLimit);
+    _undoManager.reset();
 
     _player.position.setFrom(Board.gridToPixel(_gameState.playerPosition));
     _player.facing = Direction.down;

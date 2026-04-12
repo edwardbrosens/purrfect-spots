@@ -35,6 +35,7 @@ class _GameScreenState extends State<GameScreen> {
   bool _showResult = false;
   bool _showCategoryComplete = false;
   bool _isLoading = true;
+  int _undosAtStart = 0; // track undos at level start for undosUsed calc
 
   @override
   void initState() {
@@ -42,19 +43,17 @@ class _GameScreenState extends State<GameScreen> {
     _loadLevel();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Initialize ads once when dependencies are available
-    if (_adService == null) {
-      try {
-        final appConfig = context.read<AppConfig>();
-        if (appConfig.adsEnabled) {
-          _adService = AdService()..initialize();
-        }
-      } catch (_) {
-        // AppConfig not available — ads stay disabled
+  Future<void> _initAdsIfNeeded() async {
+    if (_adService != null) return;
+    try {
+      final appConfig = context.read<AppConfig>();
+      final authProvider = context.read<AuthProvider>();
+      if (appConfig.adsEnabled && authProvider.showAds) {
+        _adService = AdService();
+        await _adService!.initialize();
       }
+    } catch (_) {
+      // AppConfig not available — ads stay disabled
     }
   }
 
@@ -63,13 +62,14 @@ class _GameScreenState extends State<GameScreen> {
     if (!mounted) return;
 
     final gameProvider = context.read<GameProvider>();
-    final progressProvider = context.read<ProgressProvider>();
-    final storedRemaining =
-        progressProvider.getLevelProgress(level.id)?.undosRemaining;
+    final authProvider = context.read<AuthProvider>();
+    await _initAdsIfNeeded();
+    _undosAtStart = authProvider.undosRemaining;
 
     final game = CatCafeGame(
       levelData: level,
-      initialUndosRemaining: storedRemaining,
+      initialUndosRemaining: authProvider.undosRemaining,
+      unlimitedUndos: authProvider.isPremium,
       onLevelComplete: _onLevelComplete,
       onMoveChanged: () {
         if (mounted) {
@@ -95,14 +95,16 @@ class _GameScreenState extends State<GameScreen> {
 
     final moves = _game!.moveCount;
     final stars = _levelData!.starsForMoves(moves);
-    final undosUsed = _levelData!.undoLimit - _game!.undosRemaining;
+    final undosUsed = (_undosAtStart - _game!.undosRemaining).clamp(0, 999);
+
+    // Persist global undo count to user profile
+    authProvider.setUndosRemaining(_game!.undosRemaining);
 
     progressProvider.saveLevelComplete(
       levelId: _levelData!.id,
       moves: moves,
       stars: stars,
       undosUsed: undosUsed,
-      undosRemaining: _game!.undosRemaining,
       displayName: authProvider.displayName,
     );
 
@@ -132,39 +134,89 @@ class _GameScreenState extends State<GameScreen> {
     // Show interstitial ad on reset (if enabled)
     _adService?.showInterstitial();
 
+    // Track undos at start of new attempt (undos carry over, they're global)
+    _undosAtStart = _game!.undosRemaining;
+
     gameProvider.resetLevel();
     setState(() => _showResult = false);
   }
 
   Future<void> _onRequestUndos() async {
+    void grantUndos() {
+      if (!mounted) return;
+      final gameProvider = context.read<GameProvider>();
+      gameProvider.addUndos(GameConstants.undosPerAd);
+      _persistUndos();
+    }
+
     if (_adService != null) {
-      final earned = await _adService!.showRewarded();
-      if (earned && mounted) {
-        final gameProvider = context.read<GameProvider>();
-        gameProvider.addUndos(GameConstants.undosPerAd);
-        _persistUndos();
+      // Wait briefly for the ad to load if not ready yet
+      if (!_adService!.isRewardedReady) {
+        _adService!.loadRewarded();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Loading ad...'),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+        for (int i = 0; i < 8; i++) {
+          await Future.delayed(const Duration(milliseconds: 500));
+          if (_adService!.isRewardedReady) break;
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        }
       }
-    } else {
-      // Ads disabled — grant undos for free during development
-      if (mounted) {
-        final gameProvider = context.read<GameProvider>();
-        gameProvider.addUndos(GameConstants.undosPerAd);
-        _persistUndos();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('+3 undos (ads disabled)'),
-            duration: Duration(seconds: 1),
-          ),
-        );
+
+      if (_adService!.isRewardedReady) {
+        final earned = await _adService!.showRewarded();
+        if (earned) grantUndos();
+        return;
       }
+    }
+
+    // No ad service or ad still not available — grant for free
+    grantUndos();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('+${GameConstants.undosPerAd} undos'),
+          duration: const Duration(seconds: 1),
+        ),
+      );
     }
   }
 
   void _persistUndos() {
-    if (_levelData == null || _game == null) return;
-    context
-        .read<ProgressProvider>()
-        .saveUndosRemaining(_levelData!.id, _game!.undosRemaining);
+    if (_game == null) return;
+    context.read<AuthProvider>().setUndosRemaining(_game!.undosRemaining);
+  }
+
+  Future<void> _showUndoPrompt() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Out of undos!'),
+        content: Text(
+          'Watch a short video to earn ${GameConstants.undosPerAd} extra undos?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('No thanks'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('Get ${GameConstants.undosPerAd} undos'),
+          ),
+        ],
+      ),
+    );
+    if (result == true && mounted) {
+      await _onRequestUndos();
+    }
   }
 
   @override
@@ -206,7 +258,7 @@ class _GameScreenState extends State<GameScreen> {
         );
         if (shouldLeave == true && navContext.mounted) {
           _persistUndos();
-          navContext.go('/levels');
+          navContext.go('/levels/${((_levelData!.floor - 1) ~/ 10).clamp(0, 9)}');
         }
       },
       child: Scaffold(
@@ -227,7 +279,7 @@ class _GameScreenState extends State<GameScreen> {
               child: GameWidget(game: _game!),
             ),
 
-            // HUD overlay
+            // HUD overlay (top)
             Positioned(
               top: 0,
               left: 0,
@@ -235,17 +287,28 @@ class _GameScreenState extends State<GameScreen> {
               child: HudOverlay(
                 levelName: _levelData!.name,
                 floorNumber: _levelData!.floor,
-                onBack: () => context.go('/levels'),
+                categoryName: themeForFloor(_levelData!.floor).name,
+                onBack: () => context.go('/levels/${((_levelData!.floor - 1) ~/ 10).clamp(0, 9)}'),
+              ),
+            ),
+
+            // Bottom action bar
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: GameBottomBar(
                 onReset: _onReset,
                 onUndo: () {
                   final gameProvider = context.read<GameProvider>();
                   if (gameProvider.canUndo) {
                     gameProvider.handleUndo();
-                  } else {
-                    _onRequestUndos();
+                    _persistUndos();
                   }
                 },
                 onRequestUndos: _onRequestUndos,
+                onUndoNoCredits: _showUndoPrompt,
+                isPremium: context.read<AuthProvider>().isPremium,
               ),
             ),
 
@@ -273,7 +336,7 @@ class _GameScreenState extends State<GameScreen> {
                   context.go('/game/$nextId');
                 },
                 onRetry: _onReset,
-                onLevelSelect: () => context.go('/levels'),
+                onLevelSelect: () => context.go('/levels/${((_levelData!.floor - 1) ~/ 10).clamp(0, 9)}'),
               ),
           ],
         ),

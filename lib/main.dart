@@ -27,8 +27,7 @@ void main() async {
     debugPrint('The game will run in offline/local mode.');
   }
 
-  // AdMob disabled for now
-  const bool adsEnabled = false;
+  const bool adsEnabled = true;
 
   runApp(CatCafeApp(firebaseReady: firebaseReady, adsEnabled: adsEnabled));
 }

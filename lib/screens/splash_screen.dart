@@ -5,6 +5,7 @@ import '../config/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/progress_provider.dart';
 import '../services/level_loader.dart';
+import '../services/purchase_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -17,13 +18,14 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeIn;
-  late Animation<double> _bounce;
+  late Animation<double> _imageScale;
+  late Animation<double> _titleSlide;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 2200),
       vsync: this,
     );
 
@@ -31,10 +33,18 @@ class _SplashScreenState extends State<SplashScreen>
       CurvedAnimation(parent: _controller, curve: const Interval(0, 0.5)),
     );
 
-    _bounce = Tween<double>(begin: 0, end: 1).animate(
+    _titleSlide = Tween<double>(begin: 30, end: 0).animate(
       CurvedAnimation(
-          parent: _controller,
-          curve: const Interval(0.3, 0.7, curve: Curves.elasticOut)),
+        parent: _controller,
+        curve: const Interval(0.1, 0.55, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    _imageScale = Tween<double>(begin: 0.7, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.2, 0.7, curve: Curves.elasticOut),
+      ),
     );
 
     _controller.forward();
@@ -42,10 +52,8 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _initializeApp() async {
-    // Preload levels
     await LevelLoader.loadAllLevels();
 
-    // Initialize auth (gracefully handle if Firebase isn't configured)
     if (mounted) {
       final authProvider = context.read<AuthProvider>();
       try {
@@ -54,14 +62,21 @@ class _SplashScreenState extends State<SplashScreen>
         debugPrint('Auth init failed (Firebase not configured?): $e');
       }
 
-      // Load progress
       if (mounted) {
         final progressProvider = context.read<ProgressProvider>();
         await progressProvider.initialize(authProvider.uid);
       }
+
+      // Initialize in-app purchases and wire to auth
+      if (mounted) {
+        final purchaseService = context.read<PurchaseService>();
+        purchaseService.onPurchaseVerified = (_) {
+          authProvider.activatePremium();
+        };
+        await purchaseService.initialize();
+      }
     }
 
-    // Wait for animation to finish
     await Future.delayed(const Duration(milliseconds: 2500));
 
     if (mounted) {
@@ -77,65 +92,194 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final imageSize = size.width * 0.65;
+
     return Scaffold(
-      backgroundColor: CatCafeTheme.background,
-      body: Center(
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            return Opacity(
-              opacity: _fadeIn.value,
-              child: Transform.scale(
-                scale: 0.5 + _bounce.value * 0.5,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Cat face icon
-                    Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        color: CatCafeTheme.primary,
-                        borderRadius: BorderRadius.circular(30),
-                        boxShadow: [
-                          BoxShadow(
-                            color: CatCafeTheme.primary.withValues(alpha: 0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
+      body: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) {
+          final fade = _fadeIn.value;
+          final slide = _titleSlide.value;
+          final scale = _imageScale.value;
+
+          return Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFFFFF0EC), // soft pink top
+                  Color(0xFFFFF5EE), // warm cream
+                  Color(0xFFFFF8E8), // pale yellow bottom
+                ],
+                stops: [0.0, 0.5, 1.0],
+              ),
+            ),
+            child: Stack(
+              children: [
+                // Decorative elements (star, cup, paw)
+                Positioned(
+                  right: size.width * 0.08,
+                  top: size.height * 0.32,
+                  child: Opacity(
+                    opacity: fade * 0.5,
+                    child: Transform.rotate(
+                      angle: -0.2,
+                      child: Icon(
+                        Icons.star_border_rounded,
+                        size: 36,
+                        color: CatCafeTheme.pinkAccent.withValues(alpha: 0.45),
                       ),
-                      child: const Center(
-                        child: Text(
-                          '🐱',
-                          style: TextStyle(fontSize: 64),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: size.width * 0.06,
+                  bottom: size.height * 0.18,
+                  child: Opacity(
+                    opacity: fade * 0.4,
+                    child: Icon(
+                      Icons.coffee_rounded,
+                      size: 32,
+                      color: CatCafeTheme.primary.withValues(alpha: 0.35),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: size.width * 0.12,
+                  bottom: size.height * 0.22,
+                  child: Opacity(
+                    opacity: fade * 0.35,
+                    child: Transform.rotate(
+                      angle: 0.3,
+                      child: Icon(
+                        Icons.pets_rounded,
+                        size: 28,
+                        color: CatCafeTheme.pinkAccent.withValues(alpha: 0.3),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Main content
+                Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Title: "Purrfect" in pink, "Spots" in dark
+                      Opacity(
+                        opacity: fade,
+                        child: Transform.translate(
+                          offset: Offset(0, slide),
+                          child: Column(
+                            children: [
+                              Text(
+                                'Purrfect',
+                                style: CatCafeTheme.display(
+                                  fontSize: 52,
+                                  color: CatCafeTheme.pinkAccent,
+                                ),
+                              ),
+                              Transform.translate(
+                                offset: const Offset(0, -8),
+                                child: Text(
+                                  'Spots',
+                                  style: CatCafeTheme.display(
+                                    fontSize: 52,
+                                    color: CatCafeTheme.darkText,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Purrfect Spots',
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineLarge
-                          ?.copyWith(
-                            color: CatCafeTheme.darkText,
-                            fontSize: 32,
+
+                      const SizedBox(height: 16),
+
+                      // Circular cat image with white border and shadow
+                      Opacity(
+                        opacity: fade,
+                        child: Transform.scale(
+                          scale: scale,
+                          child: Container(
+                            width: imageSize + 12,
+                            height: imageSize + 12,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: CatCafeTheme.primary.withValues(alpha: 0.2),
+                                  blurRadius: 30,
+                                  offset: const Offset(0, 10),
+                                ),
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.08),
+                                  blurRadius: 15,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(6),
+                              child: ClipOval(
+                                child: Image.asset(
+                                  'assets/images/categories/latte_lounge.jpg',
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, _, _) => Container(
+                                    color: CatCafeTheme.primary.withValues(alpha: 0.2),
+                                    child: const Icon(
+                                      Icons.pets_rounded,
+                                      size: 80,
+                                      color: CatCafeTheme.primary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'A Cat Café Puzzle',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: CatCafeTheme.darkText.withValues(alpha: 0.6),
-                          ),
-                    ),
-                  ],
+                        ),
+                      ),
+
+                      SizedBox(height: size.height * 0.08),
+
+                      // Subtitle and version
+                      Opacity(
+                        opacity: fade,
+                        child: Column(
+                          children: [
+                            Text(
+                              'A cosy cat caf\u00e9 puzzle\ngame',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontStyle: FontStyle.italic,
+                                color: CatCafeTheme.darkText.withValues(alpha: 0.55),
+                                height: 1.4,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'v1.0.4',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: CatCafeTheme.darkText.withValues(alpha: 0.35),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            );
-          },
-        ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

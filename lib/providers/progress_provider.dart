@@ -67,32 +67,12 @@ class ProgressProvider extends ChangeNotifier {
     return floor <= 1;
   }
 
-  /// Persist the remaining undos for a level (e.g. after watching an ad
-  /// or leaving the level mid-play). Does NOT mark the level complete.
-  Future<void> saveUndosRemaining(String levelId, int remaining) async {
-    final existing = _progress[levelId];
-    final updated = (existing ??
-            LevelProgress(levelId: levelId, lastPlayedAt: DateTime.now()))
-        .copyWith(undosRemaining: remaining, lastPlayedAt: DateTime.now());
-    _progress[levelId] = updated;
-    await _saveToLocal(levelId, updated);
-    if (firebaseReady && _uid != null) {
-      try {
-        await _firestoreService.saveLevelProgress(_uid!, updated);
-      } catch (e) {
-        debugPrint('Failed to sync undosRemaining: $e');
-      }
-    }
-    notifyListeners();
-  }
-
   /// Save level completion.
   Future<void> saveLevelComplete({
     required String levelId,
     required int moves,
     required int stars,
     required int undosUsed,
-    required int undosRemaining,
     required String displayName,
   }) async {
     final existing = _progress[levelId];
@@ -111,7 +91,6 @@ class ProgressProvider extends ChangeNotifier {
           : moves,
       attempts: attempts,
       undosUsed: undosUsed,
-      undosRemaining: undosRemaining,
       lastPlayedAt: DateTime.now(),
     );
 
@@ -201,9 +180,6 @@ class ProgressProvider extends ChangeNotifier {
     await prefs.setInt('${p}_bestMoves', progress.bestMoves);
     await prefs.setInt('${p}_attempts', progress.attempts);
     await prefs.setInt('${p}_undosUsed', progress.undosUsed);
-    if (progress.undosRemaining != null) {
-      await prefs.setInt('${p}_undosRemaining', progress.undosRemaining!);
-    }
     await prefs.setInt(
         '${p}_lastPlayedAt', progress.lastPlayedAt.millisecondsSinceEpoch);
   }
@@ -228,7 +204,6 @@ class ProgressProvider extends ChangeNotifier {
         bestMoves: prefs.getInt('${p}_bestMoves') ?? 0,
         attempts: prefs.getInt('${p}_attempts') ?? 0,
         undosUsed: prefs.getInt('${p}_undosUsed') ?? 0,
-        undosRemaining: prefs.getInt('${p}_undosRemaining'),
         lastPlayedAt: DateTime.fromMillisecondsSinceEpoch(
             prefs.getInt('${p}_lastPlayedAt') ??
                 DateTime.now().millisecondsSinceEpoch),

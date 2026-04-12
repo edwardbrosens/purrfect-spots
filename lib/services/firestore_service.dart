@@ -45,6 +45,13 @@ class FirestoreService {
     throw Exception('Could not allocate a unique username tag, please try again.');
   }
 
+  /// Update the global undo count on the user document.
+  Future<void> updateUndosRemaining(String uid, int count) async {
+    await _db.collection('users').doc(uid).update({
+      'undosRemaining': count,
+    });
+  }
+
   // ── Level Progress ────────────────────────────────────────
 
   Future<void> saveLevelProgress(

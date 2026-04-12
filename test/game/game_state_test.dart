@@ -232,9 +232,10 @@ void main() {
       manager.push(GameState.fromLevel(level));
       manager.push(GameState.fromLevel(level));
 
-      manager.reset(undoLimit: 5);
+      manager.reset();
       expect(manager.historyLength, 0);
-      expect(manager.undosRemaining, 5);
+      // Undos are global — reset only clears history, not the count
+      expect(manager.undosRemaining, 3);
     });
   });
 

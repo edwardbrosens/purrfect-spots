@@ -4,12 +4,16 @@ import 'game_state.dart';
 class UndoManager {
   final List<GameState> _history = [];
   int _undosRemaining;
+  bool unlimited;
 
-  UndoManager({required int undoLimit, int? initialRemaining})
-      : _undosRemaining = initialRemaining ?? undoLimit;
+  UndoManager({
+    required int undoLimit,
+    int? initialRemaining,
+    this.unlimited = false,
+  }) : _undosRemaining = initialRemaining ?? undoLimit;
 
   int get undosRemaining => _undosRemaining;
-  bool get canUndo => _history.isNotEmpty && _undosRemaining > 0;
+  bool get canUndo => _history.isNotEmpty && (unlimited || _undosRemaining > 0);
   int get historyLength => _history.length;
 
   /// Push a state onto the undo stack (call before applying a move).
@@ -20,7 +24,7 @@ class UndoManager {
   /// Undo the last move. Returns the previous state, or null if can't undo.
   GameState? undo() {
     if (!canUndo) return null;
-    _undosRemaining--;
+    if (!unlimited) _undosRemaining--;
     return _history.removeLast();
   }
 
@@ -29,9 +33,9 @@ class UndoManager {
     _undosRemaining += count;
   }
 
-  /// Reset the undo manager (e.g., on level restart).
-  void reset({required int undoLimit}) {
+  /// Reset the undo history (e.g., on level restart).
+  /// Undos are global — do NOT reset the remaining count.
+  void reset() {
     _history.clear();
-    _undosRemaining = undoLimit;
   }
 }

@@ -6,10 +6,11 @@ import '../config/level_themes.dart';
 import '../models/level_data.dart';
 import '../providers/progress_provider.dart';
 import '../services/level_loader.dart';
-import '../widgets/star_rating.dart';
 
 class LevelSelectScreen extends StatefulWidget {
-  const LevelSelectScreen({super.key});
+  final int categoryIndex;
+
+  const LevelSelectScreen({super.key, required this.categoryIndex});
 
   @override
   State<LevelSelectScreen> createState() => _LevelSelectScreenState();
@@ -18,8 +19,12 @@ class LevelSelectScreen extends StatefulWidget {
 class _LevelSelectScreenState extends State<LevelSelectScreen> {
   List<LevelData> _levels = [];
   bool _isLoading = true;
-  final Map<int, GlobalKey> _themeKeys = {};
-  final ScrollController _scrollController = ScrollController();
+
+  LevelTheme get _theme =>
+      kLevelThemes[widget.categoryIndex.clamp(0, kLevelThemes.length - 1)];
+
+  int get _firstFloor => widget.categoryIndex * 10 + 1;
+  int get _lastFloor => widget.categoryIndex * 10 + 10;
 
   @override
   void initState() {
@@ -28,234 +33,350 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
   }
 
   Future<void> _loadLevels() async {
-    final levels = await LevelLoader.loadAllLevels();
+    final all = await LevelLoader.loadAllLevels();
+    final filtered = all
+        .where((l) => l.floor >= _firstFloor && l.floor <= _lastFloor)
+        .toList()
+      ..sort((a, b) => a.floor.compareTo(b.floor));
     setState(() {
-      _levels = levels;
+      _levels = filtered;
       _isLoading = false;
     });
   }
 
-  /// Find the next floor the player should play (lowest unlocked + uncompleted),
-  /// falling back to the highest unlocked level if everything is done.
-  LevelData? _continueLevel(ProgressProvider p) {
-    LevelData? lastUnlocked;
-    for (final lvl in _levels) {
-      final unlocked = p.isLevelUnlocked(lvl.floor) || lvl.floor == 1;
-      if (!unlocked) break;
-      lastUnlocked = lvl;
-      final prog = p.getLevelProgress(lvl.id);
-      if (prog == null || !prog.completed) return lvl;
+  int _categoryStars(ProgressProvider progress) {
+    int total = 0;
+    for (final level in _levels) {
+      final p = progress.getLevelProgress(level.id);
+      if (p != null) total += p.stars;
     }
-    return lastUnlocked;
+    return total;
   }
 
-@override
-  Widget build(BuildContext context) {
-    final progressProvider = context.watch<ProgressProvider>();
-    final continueLevel = _continueLevel(progressProvider);
-
-    // Group levels by theme index (every 10 floors)
-    final Map<int, List<LevelData>> grouped = {};
-    for (final lvl in _levels) {
-      final idx = ((lvl.floor - 1) ~/ 10).clamp(0, kLevelThemes.length - 1);
-      grouped.putIfAbsent(idx, () => []).add(lvl);
+  int _completedCount(ProgressProvider progress) {
+    int count = 0;
+    for (final level in _levels) {
+      final p = progress.getLevelProgress(level.id);
+      if (p != null && p.completed) count++;
     }
-    final sortedKeys = grouped.keys.toList()..sort();
+    return count;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = context.watch<ProgressProvider>();
+    final maxStars = _levels.length * 3;
+    final earnedStars = _categoryStars(progress);
+    final completed = _completedCount(progress);
+    final progressPercent =
+        _levels.isEmpty ? 0.0 : completed / _levels.length;
 
     return Scaffold(
       backgroundColor: CatCafeTheme.background,
-      appBar: AppBar(
-        title: const Text('Select Floor'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => context.go('/menu'),
-        ),
-      ),
-      floatingActionButton: continueLevel == null
-          ? null
-          : FloatingActionButton.extended(
-              icon: const Icon(Icons.play_arrow_rounded),
-              label: Text('Continue · Level ${continueLevel.floor}'),
-              backgroundColor: CatCafeTheme.primary,
-              foregroundColor: Colors.white,
-              onPressed: () => context.go('/game/${continueLevel.id}'),
-            ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _levels.isEmpty
-              ? const Center(
-                  child: Text('No levels found!',
-                      style: TextStyle(fontSize: 18)))
-              : CustomScrollView(
-                  controller: _scrollController,
-                  slivers: [
-                    for (final idx in sortedKeys) ...[
-                      SliverToBoxAdapter(
-                        key: _themeKeys.putIfAbsent(idx, () => GlobalKey()),
-                        child: _ThemeHeader(
-                          theme: kLevelThemes[idx],
-                          levels: grouped[idx]!,
-                          progress: progressProvider,
+          : SafeArea(
+              child: Column(
+                children: [
+                  // Header bar
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back_rounded),
+                          color: CatCafeTheme.darkText,
+                          onPressed: () => context.go('/menu'),
                         ),
-                      ),
-                      SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                        sliver: SliverGrid(
-                          gridDelegate:
-                              const SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: 180,
-                            childAspectRatio: 0.85,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
+                        const Spacer(),
+                        Text(
+                          _theme.name,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: CatCafeTheme.darkText,
                           ),
-                          delegate: SliverChildBuilderDelegate(
-                            (context, i) {
-                              final level = grouped[idx]![i];
-                              final progress =
-                                  progressProvider.getLevelProgress(level.id);
-                              final isUnlocked = progressProvider
-                                      .isLevelUnlocked(level.floor) ||
-                                  level.floor == 1;
-                              return _LevelCard(
-                                level: level,
-                                progress: progress,
+                        ),
+                        const Spacer(),
+                        Icon(Icons.pets_rounded,
+                            size: 18, color: CatCafeTheme.star),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$earnedStars/$maxStars',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: CatCafeTheme.darkText,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                    ),
+                  ),
+
+                  // Scrollable content
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Hero image card
+                          _HeroCard(
+                            theme: _theme,
+                            categoryIndex: widget.categoryIndex,
+                            firstFloor: _firstFloor,
+                            lastFloor: _lastFloor,
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Progress bar
+                          _ProgressBar(
+                            percent: progressPercent,
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Levels section header
+                          const Text(
+                            'Levels',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: CatCafeTheme.darkText,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Level grid
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                              childAspectRatio: 0.85,
+                            ),
+                            itemCount: _levels.length,
+                            itemBuilder: (context, index) {
+                              final level = _levels[index];
+                              final levelProgress =
+                                  progress.getLevelProgress(level.id);
+                              final isUnlocked =
+                                  progress.isLevelUnlocked(level.floor) ||
+                                      level.floor == 1;
+                              final isCompleted =
+                                  levelProgress?.completed ?? false;
+                              final stars = levelProgress?.stars ?? 0;
+
+                              return _LevelTile(
+                                floor: level.floor,
                                 isUnlocked: isUnlocked,
-                                accent: kLevelThemes[idx].color,
-                                onTap: () {
-                                  if (isUnlocked) {
-                                    context.go('/game/${level.id}');
-                                  }
-                                },
+                                isCompleted: isCompleted,
+                                stars: stars,
+                                onTap: isUnlocked
+                                    ? () => context.go('/game/${level.id}')
+                                    : null,
                               );
                             },
-                            childCount: grouped[idx]!.length,
                           ),
-                        ),
+                          const SizedBox(height: 24),
+                        ],
                       ),
+                    ),
+                  ),
+
+                  // Bottom nav bar
+                  _BottomNavBar(categoryIndex: widget.categoryIndex),
+                ],
+              ),
+            ),
+    );
+  }
+}
+
+class _HeroCard extends StatelessWidget {
+  final LevelTheme theme;
+  final int categoryIndex;
+  final int firstFloor;
+  final int lastFloor;
+
+  const _HeroCard({
+    required this.theme,
+    required this.categoryIndex,
+    required this.firstFloor,
+    required this.lastFloor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final subtitle = categoryIndex == 0
+        ? 'Floors $firstFloor-$lastFloor \u00b7 Tutorial'
+        : 'Floors $firstFloor-$lastFloor';
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: AspectRatio(
+        aspectRatio: 16 / 9,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.asset(
+              theme.imagePath,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      theme.color.withValues(alpha: 0.8),
+                      theme.color.withValues(alpha: 0.4),
                     ],
-                    const SliverToBoxAdapter(child: SizedBox(height: 80)),
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Center(
+                  child: Icon(theme.icon, size: 64, color: Colors.white),
+                ),
+              ),
+            ),
+            // Gradient overlay at bottom
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.6),
+                    ],
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      theme.name,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.white.withValues(alpha: 0.9),
+                      ),
+                    ),
                   ],
                 ),
-    );
-  }
-}
-
-class _ThemeHeader extends StatelessWidget {
-  final LevelTheme theme;
-  final List<LevelData> levels;
-  final ProgressProvider progress;
-  const _ThemeHeader({
-    required this.theme,
-    required this.levels,
-    required this.progress,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final completed =
-        levels.where((l) => progress.getLevelProgress(l.id)?.completed ?? false).length;
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            theme.color.withValues(alpha: 0.85),
-            theme.color.withValues(alpha: 0.55),
+              ),
+            ),
           ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: theme.color.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.25),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(theme.icon, size: 28, color: Colors.white),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  theme.name,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                Text(
-                  'Floors ${levels.first.floor}–${levels.last.floor}  ·  $completed/${levels.length} cleared',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withValues(alpha: 0.9),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
 }
 
-class _LevelCard extends StatelessWidget {
-  final LevelData level;
-  final dynamic progress; // LevelProgress?
-  final bool isUnlocked;
-  final Color accent;
-  final VoidCallback onTap;
+class _ProgressBar extends StatelessWidget {
+  final double percent;
 
-  const _LevelCard({
-    required this.level,
-    required this.progress,
+  const _ProgressBar({required this.percent});
+
+  @override
+  Widget build(BuildContext context) {
+    final displayPercent = (percent * 100).round();
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Progress',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: CatCafeTheme.darkText,
+              ),
+            ),
+            Text(
+              '$displayPercent%',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: CatCafeTheme.darkText,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: LinearProgressIndicator(
+            value: percent,
+            minHeight: 8,
+            backgroundColor: CatCafeTheme.lockedTile,
+            valueColor:
+                const AlwaysStoppedAnimation<Color>(CatCafeTheme.primary),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LevelTile extends StatelessWidget {
+  final int floor;
+  final bool isUnlocked;
+  final bool isCompleted;
+  final int stars;
+  final VoidCallback? onTap;
+
+  const _LevelTile({
+    required this.floor,
     required this.isUnlocked,
-    required this.accent,
-    required this.onTap,
+    required this.isCompleted,
+    required this.stars,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isCompleted = progress?.completed ?? false;
-    final stars = progress?.stars ?? 0;
+    final Color bgColor;
+    if (isCompleted) {
+      bgColor = CatCafeTheme.pinkAccent;
+    } else if (isUnlocked) {
+      bgColor = Colors.white;
+    } else {
+      bgColor = CatCafeTheme.lockedTile;
+    }
 
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+      child: Container(
         decoration: BoxDecoration(
-          color: isUnlocked ? CatCafeTheme.surface : Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isCompleted
-                ? accent
-                : isUnlocked
-                    ? accent.withValues(alpha: 0.35)
-                    : Colors.grey.shade300,
-            width: isCompleted ? 2 : 1,
-          ),
+          color: bgColor,
+          borderRadius: BorderRadius.circular(12),
           boxShadow: isUnlocked
               ? [
                   BoxShadow(
-                    color: accent.withValues(alpha: 0.18),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  )
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
                 ]
               : null,
         ),
@@ -263,41 +384,154 @@ class _LevelCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (!isUnlocked)
-              Icon(Icons.lock_rounded, size: 32, color: Colors.grey.shade400)
+              Icon(Icons.lock_rounded, size: 28, color: Colors.grey.shade400)
             else ...[
               Text(
-                '${level.floor}',
+                '$floor',
                 style: TextStyle(
-                  fontSize: 28,
+                  fontSize: 26,
                   fontWeight: FontWeight.bold,
-                  color: CatCafeTheme.darkText,
+                  color:
+                      isCompleted ? Colors.white : CatCafeTheme.darkText,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                level.name,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: CatCafeTheme.darkText.withValues(alpha: 0.7),
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 8),
-              StarRating(stars: stars, size: 18),
-              if (isCompleted && progress?.bestMoves != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    '${progress.bestMoves} moves',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: CatCafeTheme.darkText.withValues(alpha: 0.5),
-                    ),
-                  ),
-                ),
+              const SizedBox(height: 6),
+              _StarDots(stars: stars, isCompleted: isCompleted),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StarDots extends StatelessWidget {
+  final int stars;
+  final bool isCompleted;
+
+  const _StarDots({required this.stars, required this.isCompleted});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(3, (i) {
+        final filled = i < stars;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          child: Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: filled ? CatCafeTheme.star : Colors.transparent,
+              border: filled
+                  ? null
+                  : Border.all(
+                      color: isCompleted
+                          ? Colors.white.withValues(alpha: 0.5)
+                          : const Color(0xFFD4C5B2),
+                      width: 1,
+                    ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+class _BottomNavBar extends StatelessWidget {
+  final int categoryIndex;
+
+  const _BottomNavBar({required this.categoryIndex});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: CatCafeTheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _NavItem(
+                icon: Icons.play_arrow_rounded,
+                label: 'Play',
+                isActive: true,
+                onTap: () {},
+              ),
+              _NavItem(
+                icon: Icons.pets_rounded,
+                label: 'Cats',
+                isActive: false,
+                onTap: () {},
+              ),
+              _NavItem(
+                icon: Icons.store_rounded,
+                label: 'Shop',
+                isActive: false,
+                onTap: () {},
+              ),
+              _NavItem(
+                icon: Icons.settings_rounded,
+                label: 'Settings',
+                isActive: false,
+                onTap: () => context.go('/settings'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isActive ? CatCafeTheme.primary : CatCafeTheme.darkText.withValues(alpha: 0.4);
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 24, color: color),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                color: color,
+              ),
+            ),
           ],
         ),
       ),

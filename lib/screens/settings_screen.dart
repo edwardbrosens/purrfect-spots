@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/progress_provider.dart';
+import '../services/purchase_service.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -72,6 +73,12 @@ class SettingsScreen extends StatelessWidget {
               ],
             ),
           ),
+
+          const SizedBox(height: 16),
+
+          // Premium section
+          _SectionHeader(title: 'Premium'),
+          _PremiumCard(isPremium: authProvider.isPremium),
 
           const SizedBox(height: 16),
 
@@ -193,6 +200,120 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _PremiumCard extends StatelessWidget {
+  final bool isPremium;
+  const _PremiumCard({required this.isPremium});
+
+  @override
+  Widget build(BuildContext context) {
+    final purchaseService = context.watch<PurchaseService>();
+
+    if (isPremium) {
+      return Card(
+        color: CatCafeTheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: const ListTile(
+          leading: Icon(Icons.star_rounded, color: Colors.amber, size: 32),
+          title: Text('Premium Active',
+              style: TextStyle(fontWeight: FontWeight.bold)),
+          subtitle: Text('Unlimited undos and no ads'),
+        ),
+      );
+    }
+
+    return Card(
+      color: CatCafeTheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            const Icon(Icons.star_rounded, color: Colors.amber, size: 40),
+            const SizedBox(height: 8),
+            const Text(
+              'Purrfect Premium',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: CatCafeTheme.darkText,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Unlimited undos & no ads',
+              style: TextStyle(
+                color: CatCafeTheme.darkText.withValues(alpha: 0.6),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '${purchaseService.priceLabel} / month',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: CatCafeTheme.darkText,
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: purchaseService.purchasePending
+                    ? null
+                    : () => purchaseService.buyPremium(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: CatCafeTheme.pinkAccent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: purchaseService.purchasePending
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'Subscribe',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => purchaseService.restorePurchases(),
+              child: Text(
+                'Restore purchases',
+                style: TextStyle(
+                  color: CatCafeTheme.darkText.withValues(alpha: 0.5),
+                  fontSize: 13,
+                ),
+              ),
+            ),
+            if (purchaseService.error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  purchaseService.error!,
+                  style: const TextStyle(color: Colors.red, fontSize: 12),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

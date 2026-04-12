@@ -9,6 +9,9 @@ class UserProfile {
   final DateTime createdAt;
   final int totalStars;
   final int levelsCompleted;
+  final int undosRemaining;
+  final bool adsDisabled; // admin toggle in Firestore
+  final DateTime? premiumUntil; // null = not premium
 
   const UserProfile({
     required this.uid,
@@ -19,7 +22,15 @@ class UserProfile {
     required this.createdAt,
     this.totalStars = 0,
     this.levelsCompleted = 0,
+    this.undosRemaining = 10,
+    this.adsDisabled = false,
+    this.premiumUntil,
   });
+
+  bool get isPremium =>
+      premiumUntil != null && premiumUntil!.isAfter(DateTime.now());
+
+  bool get showAds => !adsDisabled && !isPremium;
 
   /// Username with tag, e.g. "Whiskers#0421". Used in account details only.
   String get fullHandle =>
@@ -36,6 +47,10 @@ class UserProfile {
         'createdAt': Timestamp.fromDate(createdAt),
         'totalStars': totalStars,
         'levelsCompleted': levelsCompleted,
+        'undosRemaining': undosRemaining,
+        'adsDisabled': adsDisabled,
+        'premiumUntil':
+            premiumUntil != null ? Timestamp.fromDate(premiumUntil!) : null,
       };
 
   factory UserProfile.fromMap(Map<String, dynamic> map) => UserProfile(
@@ -47,6 +62,11 @@ class UserProfile {
         createdAt: (map['createdAt'] as Timestamp).toDate(),
         totalStars: map['totalStars'] as int? ?? 0,
         levelsCompleted: map['levelsCompleted'] as int? ?? 0,
+        undosRemaining: map['undosRemaining'] as int? ?? 10,
+        adsDisabled: map['adsDisabled'] as bool? ?? false,
+        premiumUntil: map['premiumUntil'] != null
+            ? (map['premiumUntil'] as Timestamp).toDate()
+            : null,
       );
 
   UserProfile copyWith({
@@ -56,6 +76,9 @@ class UserProfile {
     String? authProvider,
     int? totalStars,
     int? levelsCompleted,
+    int? undosRemaining,
+    bool? adsDisabled,
+    DateTime? premiumUntil,
   }) =>
       UserProfile(
         uid: uid,
@@ -66,5 +89,8 @@ class UserProfile {
         createdAt: createdAt,
         totalStars: totalStars ?? this.totalStars,
         levelsCompleted: levelsCompleted ?? this.levelsCompleted,
+        undosRemaining: undosRemaining ?? this.undosRemaining,
+        adsDisabled: adsDisabled ?? this.adsDisabled,
+        premiumUntil: premiumUntil ?? this.premiumUntil,
       );
 }

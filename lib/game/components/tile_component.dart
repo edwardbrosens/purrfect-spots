@@ -6,7 +6,7 @@ import '../../config/level_themes.dart';
 import '../../config/theme.dart';
 import '../../models/level_data.dart';
 
-/// Visual representation of a single grid tile — warm cosy café style.
+/// Visual representation of a single grid tile — clean minimal style.
 class TileComponent extends PositionComponent {
   final CellType cellType;
   final bool isTarget;
@@ -21,13 +21,11 @@ class TileComponent extends PositionComponent {
   bool hasCat = false;
   double _dent = 0; // 0..1 eased
 
-  // Per-tile randomness (deterministic)
+  // Per-tile randomness (deterministic) — used for subtle wall color variation
   late final double _r1; // 0..1
-  late final double _r2;
-  late final double _r3;
-  late final int _decoration; // 0=none, 1=paw, 2=heart, 3=fish, 4=star, 5=swirl
-  late final int _knot; // 0=none, 1=knot somewhere
-  late final double _planksOffset;
+
+  static const double _gap = 2.0;
+  static const double _radius = 6.0;
 
   TileComponent({
     required this.cellType,
@@ -42,12 +40,6 @@ class TileComponent extends PositionComponent {
         ) {
     final rng = Random(row * 9173 + col * 31 + 7);
     _r1 = rng.nextDouble();
-    _r2 = rng.nextDouble();
-    _r3 = rng.nextDouble();
-    // ~12% chance of a decoration on a floor tile
-    _decoration = rng.nextInt(100) < 12 ? rng.nextInt(5) + 1 : 0;
-    _knot = rng.nextInt(100) < 18 ? 1 : 0;
-    _planksOffset = rng.nextDouble() * 4;
   }
 
   @override
@@ -76,274 +68,65 @@ class TileComponent extends PositionComponent {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // WALL — warm wood paneling with vertical planks
+  // WALL — simple dark rounded square with gradient
   // ─────────────────────────────────────────────────────────────
   void _renderWall(Canvas canvas, double s) {
-    final rect = Rect.fromLTWH(0, 0, s, s);
+    final rect = Rect.fromLTWH(_gap, _gap, s - _gap * 2, s - _gap * 2);
+    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(_radius));
 
-    // Base warm wood (themed)
-    final baseColor = Color.lerp(palette.wallBase, palette.wallDark, _r1 * 0.4)!;
+    // Subtle per-tile color variation
+    final baseColor = Color.lerp(palette.wallBase, palette.wallDark, _r1 * 0.3)!;
 
-    // Vertical gradient — top lighter, bottom darker (light from above)
-    canvas.drawRect(
-      rect,
+    // Simple 2-color top-to-bottom gradient
+    canvas.drawRRect(
+      rrect,
       Paint()
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color.lerp(baseColor, palette.wallLight, 0.55)!,
             baseColor,
-            Color.lerp(baseColor, palette.wallSeam, 0.4)!,
+            palette.wallDark,
           ],
-          stops: const [0.0, 0.5, 1.0],
         ).createShader(rect),
     );
 
-    // Vertical plank seams (2 planks per tile)
-    final seamPaint = Paint()
-      ..color = palette.wallSeam.withValues(alpha: 0.5)
-      ..strokeWidth = 1.2;
-    canvas.drawLine(Offset(s / 2, 0), Offset(s / 2, s), seamPaint);
-    // Soft seam highlight
-    canvas.drawLine(
-      Offset(s / 2 + 1, 0),
-      Offset(s / 2 + 1, s),
-      Paint()
-        ..color = Colors.white.withValues(alpha: 0.06)
-        ..strokeWidth = 0.6,
-    );
-
-    // Wood grain — long curving lines
-    final grainPaint = Paint()
-      ..color = palette.wallSeam.withValues(alpha: 0.22)
-      ..strokeWidth = 0.6
-      ..style = PaintingStyle.stroke;
-    for (int p = 0; p < 2; p++) {
-      final px = s * 0.25 + p * s * 0.5;
-      for (int i = 0; i < 3; i++) {
-        final xOff = (i - 1) * 4.0 + _planksOffset * (p == 0 ? 1 : -1);
-        final path = Path();
-        path.moveTo(px + xOff, -2);
-        path.cubicTo(
-          px + xOff + sin(_r1 * pi + i) * 2, s * 0.33,
-          px + xOff - sin(_r2 * pi + i) * 2, s * 0.66,
-          px + xOff + sin(_r3 * pi + i * 2) * 1.5, s + 2,
-        );
-        canvas.drawPath(path, grainPaint);
-      }
-    }
-
-    // Knot in the wood
-    if (_knot == 1) {
-      final kx = s * (0.25 + _r1 * 0.5);
-      final ky = s * (0.2 + _r2 * 0.6);
-      final kr = 2.5 + _r3 * 1.5;
-      canvas.drawCircle(
-        Offset(kx, ky),
-        kr,
-        Paint()..color = palette.wallSeam.withValues(alpha: 0.55),
-      );
-      canvas.drawCircle(
-        Offset(kx, ky),
-        kr,
-        Paint()
-          ..color = palette.wallSeam.withValues(alpha: 0.85)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 0.8,
-      );
-      // Knot rings
-      canvas.drawCircle(
-        Offset(kx, ky),
-        kr + 1.5,
-        Paint()
-          ..color = palette.wallSeam.withValues(alpha: 0.25)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 0.6,
-      );
-    }
-
-    // Top edge highlight (warm light from above)
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, s, 3),
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.white.withValues(alpha: 0.22),
-            Colors.transparent,
-          ],
-        ).createShader(Rect.fromLTWH(0, 0, s, 3)),
-    );
-
-    // Bottom edge shadow
-    canvas.drawRect(
-      Rect.fromLTWH(0, s - 3, s, 3),
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.transparent,
-            Colors.black.withValues(alpha: 0.25),
-          ],
-        ).createShader(Rect.fromLTWH(0, s - 3, s, 3)),
+    // Tiny white highlight at the top edge
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(_gap, _gap, s - _gap * 2, 1.5),
+        const Radius.circular(_radius),
+      ),
+      Paint()..color = Colors.white.withValues(alpha: 0.18),
     );
   }
 
   // ─────────────────────────────────────────────────────────────
-  // FLOOR — continuous warm wood planks (no visible grid)
+  // FLOOR — simple light rounded square
   // ─────────────────────────────────────────────────────────────
   void _renderFloor(Canvas canvas, double s) {
-    final rect = Rect.fromLTWH(0, 0, s, s);
+    final rect = Rect.fromLTWH(_gap, _gap, s - _gap * 2, s - _gap * 2);
+    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(_radius));
 
-    // Themed floor base
-    final baseColor = Color.lerp(palette.floorLight, palette.floorBase, _r1 * 0.7 + 0.3)!;
-    final darkerEdge = Color.lerp(baseColor, palette.floorDark, 0.7)!;
-
-    // Soft radial light from upper-left for cosy feel
-    canvas.drawRect(
-      rect,
-      Paint()
-        ..shader = RadialGradient(
-          center: const Alignment(-0.4, -0.4),
-          radius: 1.4,
-          colors: [
-            Color.lerp(baseColor, Colors.white, 0.15)!,
-            baseColor,
-            darkerEdge,
-          ],
-          stops: const [0.0, 0.5, 1.0],
-        ).createShader(rect),
+    // Solid fill
+    canvas.drawRRect(
+      rrect,
+      Paint()..color = palette.floorBase,
     );
 
-    // Long horizontal wood plank shading — every 2 rows is a "plank"
-    // Use row parity to create a continuous plank look across tiles
-    final isPlankSeam = row % 2 == 0;
-    if (isPlankSeam) {
-      // Subtle plank seam at top of tile
-      canvas.drawRect(
-        Rect.fromLTWH(0, 0, s, 1.5),
-        Paint()..color = palette.grain.withValues(alpha: 0.35),
-      );
-      // Highlight just below
-      canvas.drawRect(
-        Rect.fromLTWH(0, 1.5, s, 0.8),
-        Paint()..color = Colors.white.withValues(alpha: 0.18),
-      );
-    }
-
-    // Wood grain — flowing lines that don't reset per tile
-    final grainPaint = Paint()
-      ..color = palette.grain.withValues(alpha: 0.22)
-      ..strokeWidth = 0.6
-      ..style = PaintingStyle.stroke;
-    final grainCount = 4;
-    for (int i = 0; i < grainCount; i++) {
-      final yPos = (i * s / grainCount) + _planksOffset + 4;
-      if (yPos > 0 && yPos < s) {
-        final path = Path();
-        path.moveTo(-2, yPos);
-        path.cubicTo(
-          s * 0.33, yPos + sin(_r1 * pi * 2 + i) * 1.5,
-          s * 0.66, yPos + cos(_r2 * pi * 2 + i) * 1.5,
-          s + 2, yPos + sin(_r3 * pi + i * 0.7) * 1.2,
-        );
-        canvas.drawPath(path, grainPaint);
-      }
-    }
-
-    // Subtle warm specks (dust motes / texture)
-    final speckPaint = Paint()..color = palette.grain.withValues(alpha: 0.3);
-    for (int i = 0; i < 4; i++) {
-      final sx = (_r1 * 7 + i * 13) % 1.0 * s;
-      final sy = (_r2 * 11 + i * 17) % 1.0 * s;
-      canvas.drawCircle(Offset(sx, sy), 0.7, speckPaint);
-    }
-
-    // Decoration (only on regular floor, not target)
-    if (!isTarget && _decoration > 0) {
-      _drawDecoration(canvas, s);
-    }
-  }
-
-  void _drawDecoration(Canvas canvas, double s) {
-    final dx = s * (0.2 + _r1 * 0.6);
-    final dy = s * (0.2 + _r2 * 0.6);
-    final color = palette.decor.withValues(alpha: 0.22);
-    final paint = Paint()..color = color;
-
-    switch (_decoration) {
-      case 1: // Paw print
-        // Main pad
-        canvas.drawOval(
-          Rect.fromCenter(center: Offset(dx, dy + 2), width: 5, height: 4),
-          paint,
-        );
-        // Toes
-        canvas.drawCircle(Offset(dx - 2.2, dy - 1.5), 1.0, paint);
-        canvas.drawCircle(Offset(dx, dy - 2.5), 1.0, paint);
-        canvas.drawCircle(Offset(dx + 2.2, dy - 1.5), 1.0, paint);
-      case 2: // Heart
-        canvas.drawCircle(Offset(dx - 1.5, dy - 0.5), 1.6, paint);
-        canvas.drawCircle(Offset(dx + 1.5, dy - 0.5), 1.6, paint);
-        final p = Path();
-        p.moveTo(dx - 3, dy);
-        p.lineTo(dx + 3, dy);
-        p.lineTo(dx, dy + 3);
-        p.close();
-        canvas.drawPath(p, paint);
-      case 3: // Fish bone
-        canvas.drawCircle(Offset(dx - 3, dy), 1.2, paint);
-        canvas.drawLine(
-          Offset(dx - 2, dy),
-          Offset(dx + 3, dy),
-          Paint()
-            ..color = color
-            ..strokeWidth = 0.8
-            ..strokeCap = StrokeCap.round,
-        );
-        for (int i = 0; i < 3; i++) {
-          canvas.drawLine(
-            Offset(dx - 1 + i * 1.5, dy - 1.5),
-            Offset(dx - 1 + i * 1.5, dy + 1.5),
-            Paint()
-              ..color = color
-              ..strokeWidth = 0.6,
-          );
-        }
-      case 4: // Star
-        final starPaint = Paint()
-          ..color = color
-          ..strokeWidth = 0.8
-          ..strokeCap = StrokeCap.round;
-        canvas.drawLine(Offset(dx, dy - 3), Offset(dx, dy + 3), starPaint);
-        canvas.drawLine(Offset(dx - 3, dy), Offset(dx + 3, dy), starPaint);
-        canvas.drawLine(Offset(dx - 2, dy - 2), Offset(dx + 2, dy + 2), starPaint);
-        canvas.drawLine(Offset(dx + 2, dy - 2), Offset(dx - 2, dy + 2), starPaint);
-      case 5: // Swirl
-        final swirlPath = Path();
-        for (int i = 0; i < 20; i++) {
-          final t = i / 20.0;
-          final ang = t * pi * 2.5;
-          final r = t * 3;
-          final x = dx + cos(ang) * r;
-          final y = dy + sin(ang) * r;
-          if (i == 0) {
-            swirlPath.moveTo(x, y);
-          } else {
-            swirlPath.lineTo(x, y);
-          }
-        }
-        canvas.drawPath(
-          swirlPath,
-          Paint()
-            ..color = color
-            ..strokeWidth = 0.7
-            ..style = PaintingStyle.stroke,
-        );
-    }
+    // Very subtle radial highlight in the center
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..shader = RadialGradient(
+          center: Alignment.center,
+          radius: 0.8,
+          colors: [
+            Colors.white.withValues(alpha: 0.10),
+            Colors.transparent,
+          ],
+        ).createShader(rect),
+    );
   }
 
   // ─────────────────────────────────────────────────────────────
