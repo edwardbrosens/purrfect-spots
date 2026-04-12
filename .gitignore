@@ -56,5 +56,10 @@ macos/Pods/
 # Build artifacts
 build/
 
+# Android signing
+android/key.properties
+*.jks
+*.keystore
+
 # Claude config
 .claude/

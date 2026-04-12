@@ -20,9 +20,9 @@ class GameConstants {
   static const String _androidRewardedAdId =
       'ca-app-pub-9288944682433583/5340465974';
   static const String _iosInterstitialAdId =
-      'ca-app-pub-9288944682433583/TODO'; // create in AdMob
+      'ca-app-pub-9288944682433583/6384302911';
   static const String _iosRewardedAdId =
-      'ca-app-pub-9288944682433583/TODO'; // create in AdMob
+      'ca-app-pub-9288944682433583/2640499024';
 
   // Google sample test ad unit IDs (always fill)
   static const String _testInterstitialAndroid =
