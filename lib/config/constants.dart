@@ -12,7 +12,7 @@ class GameConstants {
 
   // AdMob App ID: ca-app-pub-9288944682433583~6022992252
   // Set to true to use Google's sample ad unit IDs (for development)
-  static const bool useTestAds = true;
+  static const bool useTestAds = false;
 
   // Production ad unit IDs
   static const String _androidInterstitialAdId =
