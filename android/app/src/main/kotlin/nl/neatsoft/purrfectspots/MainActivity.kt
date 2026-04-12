@@ -1,4 +1,4 @@
-package com.catcafe.cat_cafe_sokoban
+package nl.neatsoft.purrfectspots
 
 import io.flutter.embedding.android.FlutterActivity
 
