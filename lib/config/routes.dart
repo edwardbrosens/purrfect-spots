@@ -10,6 +10,19 @@ import '../screens/account_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/',
+  redirect: (context, state) {
+    // Ignore Firebase Auth OAuth callback deep links
+    final uri = state.uri.toString();
+    if (uri.contains('firebaseauth') || uri.contains('/__/auth/')) {
+      return null;
+    }
+    return null;
+  },
+  errorBuilder: (context, state) {
+    // If a deep link (e.g. Firebase OAuth callback) lands here,
+    // silently redirect to the menu instead of showing an error page.
+    return const MenuScreen();
+  },
   routes: [
     GoRoute(
       path: '/',
