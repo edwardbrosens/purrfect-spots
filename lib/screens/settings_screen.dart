@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../providers/auth_provider.dart';
+import '../providers/locale_provider.dart';
 import '../providers/progress_provider.dart';
 import '../services/purchase_service.dart';
 
@@ -75,6 +76,12 @@ class SettingsScreen extends StatelessWidget {
               ],
             ),
           ),
+
+          const SizedBox(height: 16),
+
+          // Language section
+          _SectionHeader(title: l.language),
+          _LanguageCard(),
 
           const SizedBox(height: 16),
 
@@ -194,6 +201,43 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _LanguageCard extends StatelessWidget {
+  static final _languages = <(String?, String)>[
+    (null, 'System'),
+    ('en', 'English'),
+    ('nl', 'Nederlands'),
+    ('de', 'Deutsch'),
+    ('fr', 'Français'),
+    ('es', 'Español'),
+    ('it', 'Italiano'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final localeProvider = context.watch<LocaleProvider>();
+    final current = localeProvider.locale?.languageCode;
+
+    return Card(
+      color: CatCafeTheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        children: _languages.map((entry) {
+          final (code, label) = entry;
+          final isSelected = code == current;
+          return ListTile(
+            title: Text(label),
+            trailing: isSelected
+                ? const Icon(Icons.check_rounded, color: CatCafeTheme.primary)
+                : null,
+            onTap: () => localeProvider
+                .setLocale(code != null ? Locale(code) : null),
+          );
+        }).toList(),
       ),
     );
   }

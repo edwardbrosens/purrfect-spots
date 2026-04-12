@@ -91,6 +91,8 @@
   "subscribe": "S'abonner",
   "restorePurchases": "Restaurer les achats",
 
+  "language": "Langue",
+
   "about": "À propos",
   "version": "Version {version}",
   "howToPlay": "Comment jouer",

@@ -9,6 +9,7 @@ import 'config/theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/game_provider.dart';
 import 'providers/progress_provider.dart';
+import 'providers/locale_provider.dart';
 import 'services/purchase_service.dart';
 
 /// Simple config object provided to the widget tree.
@@ -38,21 +39,27 @@ class CatCafeApp extends StatelessWidget {
         ChangeNotifierProvider(
             create: (_) => ProgressProvider(firebaseReady: firebaseReady)),
         ChangeNotifierProvider(create: (_) => PurchaseService()),
+        ChangeNotifierProvider(create: (_) => LocaleProvider()),
       ],
-      child: MaterialApp.router(
-        title: 'Purrfect Spots',
-        theme: CatCafeTheme.themeData,
-        routerConfig: appRouter,
-        debugShowCheckedModeBanner: false,
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        builder: (context, child) => _ExitGuard(child: child ?? const SizedBox()),
-      ),
+      child: Builder(builder: (context) {
+        final localeProvider = context.watch<LocaleProvider>();
+        return MaterialApp.router(
+          title: 'Purrfect Spots',
+          theme: CatCafeTheme.themeData,
+          routerConfig: appRouter,
+          debugShowCheckedModeBanner: false,
+          locale: localeProvider.locale,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) =>
+              _ExitGuard(child: child ?? const SizedBox()),
+        );
+      }),
     );
   }
 }

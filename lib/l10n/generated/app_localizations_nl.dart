@@ -268,6 +268,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get restorePurchases => 'Aankopen herstellen';
 
   @override
+  String get language => 'Taal';
+
+  @override
   String get about => 'Over';
 
   @override

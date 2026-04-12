@@ -267,6 +267,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get restorePurchases => 'Restaurer les achats';
 
   @override
+  String get language => 'Langue';
+
+  @override
   String get about => 'À propos';
 
   @override

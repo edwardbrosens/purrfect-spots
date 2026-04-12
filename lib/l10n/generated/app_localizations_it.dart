@@ -270,6 +270,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get restorePurchases => 'Ripristina acquisti';
 
   @override
+  String get language => 'Lingua';
+
+  @override
   String get about => 'Info';
 
   @override

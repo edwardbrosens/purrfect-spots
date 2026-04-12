@@ -103,6 +103,8 @@
   "subscribe": "Subscribe",
   "restorePurchases": "Restore purchases",
 
+  "language": "Language",
+
   "about": "About",
   "version": "Version {version}",
   "@version": { "placeholders": { "version": { "type": "String" } } },
