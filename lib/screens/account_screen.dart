@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:purrfect_spots/l10n/generated/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
@@ -58,19 +59,20 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Future<void> _confirmSignOut(AuthProvider auth) async {
+    final l = AppLocalizations.of(context)!;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Sign out?'),
-        content: const Text('You can sign back in any time.'),
+        title: Text(l.signOutTitle),
+        content: Text(l.signOutMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Sign out'),
+            child: Text(l.signOut),
           ),
         ],
       ),
@@ -85,12 +87,13 @@ class _AccountScreenState extends State<AccountScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final l = AppLocalizations.of(context)!;
     final loggedIn = !auth.isAnonymous;
 
     return Scaffold(
       backgroundColor: CatCafeTheme.background,
       appBar: AppBar(
-        title: const Text('Account'),
+        title: Text(l.account),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.go('/settings'),
@@ -108,6 +111,7 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   List<Widget> _buildLoggedIn(AuthProvider auth) {
+    final l = AppLocalizations.of(context)!;
     final p = auth.profile;
     return [
       Card(
@@ -154,7 +158,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 ],
               ),
               const Divider(height: 24),
-              _kv('Email', auth.user?.email ?? '—'),
+              _kv(l.email, auth.user?.email ?? '—'),
               _kv('Provider', p?.authProvider ?? '—'),
               _kv('Stars', '${p?.totalStars ?? 0}'),
               _kv('Levels cleared', '${p?.levelsCompleted ?? 0}'),
@@ -166,7 +170,7 @@ class _AccountScreenState extends State<AccountScreen> {
       OutlinedButton.icon(
         onPressed: () => _confirmSignOut(auth),
         icon: const Icon(Icons.logout_rounded),
-        label: const Text('Sign out'),
+        label: Text(l.signOut),
       ),
     ];
   }
@@ -189,14 +193,15 @@ class _AccountScreenState extends State<AccountScreen> {
       );
 
   List<Widget> _buildAuthForm(AuthProvider auth) {
+    final l = AppLocalizations.of(context)!;
     return [
       ToggleButtons(
         isSelected: [_isSignUp, !_isSignUp],
         borderRadius: BorderRadius.circular(8),
         onPressed: (i) => setState(() => _isSignUp = i == 0),
-        children: const [
-          Padding(padding: EdgeInsets.symmetric(horizontal: 18), child: Text('Sign up')),
-          Padding(padding: EdgeInsets.symmetric(horizontal: 18), child: Text('Sign in')),
+        children: [
+          Padding(padding: const EdgeInsets.symmetric(horizontal: 18), child: Text(l.signUp)),
+          Padding(padding: const EdgeInsets.symmetric(horizontal: 18), child: Text(l.signIn)),
         ],
       ),
       const SizedBox(height: 16),
@@ -207,17 +212,17 @@ class _AccountScreenState extends State<AccountScreen> {
             if (_isSignUp)
               TextFormField(
                 controller: _userCtl,
-                decoration: const InputDecoration(
-                  labelText: 'Username',
-                  prefixIcon: Icon(Icons.person_outline),
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l.username,
+                  prefixIcon: const Icon(Icons.person_outline),
+                  border: const OutlineInputBorder(),
                 ),
                 validator: (v) {
                   if (!_isSignUp) return null;
                   if (v == null || v.trim().length < 2) {
-                    return 'At least 2 characters';
+                    return l.usernameMin;
                   }
-                  if (v.trim().length > 20) return 'Max 20 characters';
+                  if (v.trim().length > 20) return l.usernameMax;
                   return null;
                 },
               ),
@@ -225,13 +230,13 @@ class _AccountScreenState extends State<AccountScreen> {
             TextFormField(
               controller: _emailCtl,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                prefixIcon: Icon(Icons.email_outlined),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l.email,
+                prefixIcon: const Icon(Icons.email_outlined),
+                border: const OutlineInputBorder(),
               ),
               validator: (v) {
-                if (v == null || !v.contains('@')) return 'Enter a valid email';
+                if (v == null || !v.contains('@')) return l.emailInvalid;
                 return null;
               },
             ),
@@ -239,13 +244,13 @@ class _AccountScreenState extends State<AccountScreen> {
             TextFormField(
               controller: _passCtl,
               obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Password',
-                prefixIcon: Icon(Icons.lock_outline),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l.password,
+                prefixIcon: const Icon(Icons.lock_outline),
+                border: const OutlineInputBorder(),
               ),
               validator: (v) {
-                if (v == null || v.length < 6) return 'At least 6 characters';
+                if (v == null || v.length < 6) return l.passwordMin;
                 return null;
               },
             ),
@@ -262,7 +267,7 @@ class _AccountScreenState extends State<AccountScreen> {
         width: double.infinity,
         child: ElevatedButton(
           onPressed: auth.isLoading ? null : () => _submit(auth),
-          child: Text(_isSignUp ? 'Create account' : 'Sign in'),
+          child: Text(_isSignUp ? l.createAccount : l.signIn),
         ),
       ),
       const SizedBox(height: 12),
@@ -271,7 +276,7 @@ class _AccountScreenState extends State<AccountScreen> {
           const Expanded(child: Divider()),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text('or',
+            child: Text(l.or,
                 style: TextStyle(color: CatCafeTheme.darkText.withValues(alpha: 0.6))),
           ),
           const Expanded(child: Divider()),
@@ -303,7 +308,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   }
                 },
           icon: const Icon(Icons.g_mobiledata_rounded, size: 28),
-          label: const Text('Continue with Google'),
+          label: Text(l.continueWithGoogle),
         ),
       ),
     ];

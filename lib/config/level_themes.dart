@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:purrfect_spots/l10n/generated/app_localizations.dart';
 
 /// Per-theme tile palette used by the tile renderer.
 class TilePalette {
@@ -26,12 +27,29 @@ class TilePalette {
 
 /// Café-themed level categories. Every 10 floors share a theme.
 class LevelTheme {
-  final String name;
+  final String name; // English fallback / key
   final IconData icon;
   final Color color;
   final String imagePath;
   final TilePalette palette;
   const LevelTheme(this.name, this.icon, this.color, this.imagePath, this.palette);
+
+  /// Get the localized name for this theme.
+  String localizedName(AppLocalizations l) {
+    switch (name) {
+      case 'Latte Lounge': return l.latteLounge;
+      case 'Catnip Corner': return l.catnipCorner;
+      case 'Velvet Nook': return l.velvetNook;
+      case 'Bakery Corner': return l.bakeryCorner;
+      case 'Tea Room': return l.teaRoom;
+      case 'Greenhouse': return l.greenhouse;
+      case 'Toy Shop': return l.toyShop;
+      case 'Reading Loft': return l.readingLoft;
+      case 'Sunny Garden': return l.sunnyGarden;
+      case 'Whisker Terrace': return l.whiskerTerrace;
+      default: return name;
+    }
+  }
 }
 
 const List<LevelTheme> kLevelThemes = [

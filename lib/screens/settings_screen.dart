@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:purrfect_spots/l10n/generated/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
@@ -11,12 +12,13 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final authProvider = context.watch<AuthProvider>();
 
     return Scaffold(
       backgroundColor: CatCafeTheme.background,
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: Text(l.settings),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.go('/menu'),
@@ -26,7 +28,7 @@ class SettingsScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           // Account section
-          _SectionHeader(title: 'Account'),
+          _SectionHeader(title: l.account),
           Card(
             color: CatCafeTheme.surface,
             shape:
@@ -47,8 +49,8 @@ class SettingsScreen extends StatelessWidget {
                   title: Text(authProvider.displayName),
                   subtitle: Text(
                     authProvider.isAnonymous
-                        ? 'Playing as guest'
-                        : 'Signed in with Google',
+                        ? l.playingAsGuest
+                        : l.signedInWithGoogle,
                   ),
                 ),
                 Padding(
@@ -61,8 +63,8 @@ class SettingsScreen extends StatelessWidget {
                           ? Icons.login_rounded
                           : Icons.manage_accounts_rounded),
                       label: Text(authProvider.isAnonymous
-                          ? 'Sign in / Sign up'
-                          : 'Manage account'),
+                          ? l.signInSignUp
+                          : l.manageAccount),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: CatCafeTheme.secondary,
                         foregroundColor: CatCafeTheme.darkText,
@@ -77,31 +79,28 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Premium section
-          _SectionHeader(title: 'Premium'),
+          _SectionHeader(title: l.premium),
           _PremiumCard(isPremium: authProvider.isPremium),
 
           const SizedBox(height: 16),
 
           // Info
-          _SectionHeader(title: 'About'),
+          _SectionHeader(title: l.about),
           Card(
             color: CatCafeTheme.surface,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: const Column(
+            child: Column(
               children: [
                 ListTile(
-                  leading: Text('🐱', style: TextStyle(fontSize: 24)),
-                  title: Text('Purrfect Spots'),
-                  subtitle: Text('Version 1.0.0'),
+                  leading: const Text('🐱', style: TextStyle(fontSize: 24)),
+                  title: Text(l.appTitle),
+                  subtitle: Text(l.version('1.0.0')),
                 ),
                 ListTile(
-                  leading: Text('🧩', style: TextStyle(fontSize: 24)),
-                  title: Text('How to Play'),
-                  subtitle: Text(
-                    'Swipe to move. Push cats onto their cushions. '
-                    'Use as few moves as possible for more stars!',
-                  ),
+                  leading: const Text('🧩', style: TextStyle(fontSize: 24)),
+                  title: Text(l.howToPlay),
+                  subtitle: Text(l.howToPlayDescription),
                 ),
               ],
             ),
@@ -110,7 +109,7 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Danger zone — reset personal progress
-          _SectionHeader(title: 'Danger zone'),
+          _SectionHeader(title: l.dangerZone),
           Card(
             color: CatCafeTheme.surface,
             shape:
@@ -124,22 +123,18 @@ class SettingsScreen extends StatelessWidget {
                     final confirm = await showDialog<bool>(
                       context: context,
                       builder: (ctx) => AlertDialog(
-                        title: const Text('Reset all progress?'),
-                        content: const Text(
-                          'This will permanently delete your stars, best '
-                          'moves, undos, and every completed level on this '
-                          'account. This cannot be undone.',
-                        ),
+                        title: Text(l.resetAllProgressTitle),
+                        content: Text(l.resetAllProgressMessage),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.of(ctx).pop(false),
-                            child: const Text('Cancel'),
+                            child: Text(l.cancel),
                           ),
                           TextButton(
                             onPressed: () => Navigator.of(ctx).pop(true),
                             style: TextButton.styleFrom(
                                 foregroundColor: Colors.red),
-                            child: const Text('Reset everything'),
+                            child: Text(l.resetEverything),
                           ),
                         ],
                       ),
@@ -149,16 +144,16 @@ class SettingsScreen extends StatelessWidget {
                     await context.read<ProgressProvider>().resetAllProgress();
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Progress reset.'),
-                        duration: Duration(seconds: 2),
+                      SnackBar(
+                        content: Text(l.progressReset),
+                        duration: const Duration(seconds: 2),
                       ),
                     );
                   },
                   icon: const Icon(Icons.delete_forever_rounded,
                       color: Colors.red),
-                  label: const Text('Reset all progress',
-                      style: TextStyle(color: Colors.red)),
+                  label: Text(l.resetAllProgress,
+                      style: const TextStyle(color: Colors.red)),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Colors.red),
                   ),
@@ -180,21 +175,20 @@ class SettingsScreen extends StatelessWidget {
                   color: CatCafeTheme.secondary.withValues(alpha: 0.3),
                 ),
               ),
-              child: const Column(
+              child: Column(
                 children: [
                   Text(
-                    '💡 Tip',
-                    style: TextStyle(
+                    '💡 ${l.tipTitle}',
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       color: CatCafeTheme.darkText,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
-                    'Sign in with Google to save your progress '
-                    'across devices and appear on leaderboards!',
+                    l.tipSignIn,
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: CatCafeTheme.darkText),
+                    style: const TextStyle(color: CatCafeTheme.darkText),
                   ),
                 ],
               ),
@@ -211,17 +205,18 @@ class _PremiumCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final purchaseService = context.watch<PurchaseService>();
 
     if (isPremium) {
       return Card(
         color: CatCafeTheme.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: const ListTile(
-          leading: Icon(Icons.star_rounded, color: Colors.amber, size: 32),
-          title: Text('Premium Active',
-              style: TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Text('Unlimited undos and no ads'),
+        child: ListTile(
+          leading: const Icon(Icons.star_rounded, color: Colors.amber, size: 32),
+          title: Text(l.premiumActive,
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+          subtitle: Text(l.unlimitedUndosNoAds),
         ),
       );
     }
@@ -235,9 +230,9 @@ class _PremiumCard extends StatelessWidget {
           children: [
             const Icon(Icons.star_rounded, color: Colors.amber, size: 40),
             const SizedBox(height: 8),
-            const Text(
-              'Purrfect Premium',
-              style: TextStyle(
+            Text(
+              l.purrfectPremium,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: CatCafeTheme.darkText,
@@ -245,14 +240,14 @@ class _PremiumCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'Unlimited undos & no ads',
+              l.unlimitedUndosNoAdsShort,
               style: TextStyle(
                 color: CatCafeTheme.darkText.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 12),
             Text(
-              '${purchaseService.priceLabel} / month',
+              l.pricePerMonth(purchaseService.priceLabel),
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -283,9 +278,9 @@ class _PremiumCard extends StatelessWidget {
                           color: Colors.white,
                         ),
                       )
-                    : const Text(
-                        'Subscribe',
-                        style: TextStyle(
+                    : Text(
+                        l.subscribe,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -296,7 +291,7 @@ class _PremiumCard extends StatelessWidget {
             TextButton(
               onPressed: () => purchaseService.restorePurchases(),
               child: Text(
-                'Restore purchases',
+                l.restorePurchases,
                 style: TextStyle(
                   color: CatCafeTheme.darkText.withValues(alpha: 0.5),
                   fontSize: 13,

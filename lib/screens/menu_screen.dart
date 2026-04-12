@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:purrfect_spots/l10n/generated/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
@@ -65,11 +66,12 @@ class _MenuScreenState extends State<MenuScreen> {
       context.go('/settings');
       return;
     }
+    final l = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: const Text('Coming soon!'),
+          content: Text(l.comingSoon),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           duration: const Duration(seconds: 2),
@@ -79,6 +81,7 @@ class _MenuScreenState extends State<MenuScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     context.watch<AuthProvider>();
     final progressProvider = context.watch<ProgressProvider>();
     final continueLevel = _isLoading ? null : _continueLevel(progressProvider);
@@ -92,16 +95,16 @@ class _MenuScreenState extends State<MenuScreen> {
         final shouldExit = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Exit Purrfect Spots?'),
-            content: const Text('Are you sure you want to leave the caf\u00e9?'),
+            title: Text(l.exitTitle),
+            content: Text(l.exitMessage),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text('Stay'),
+                child: Text(l.stay),
               ),
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(true),
-                child: const Text('Exit'),
+                child: Text(l.exit),
               ),
             ],
           ),
@@ -119,22 +122,22 @@ class _MenuScreenState extends State<MenuScreen> {
           selectedItemColor: CatCafeTheme.primary,
           unselectedItemColor: CatCafeTheme.darkText.withValues(alpha: 0.4),
           backgroundColor: CatCafeTheme.surface,
-          items: const [
+          items: [
             BottomNavigationBarItem(
-              icon: Icon(Icons.home_rounded),
-              label: 'Play',
+              icon: const Icon(Icons.home_rounded),
+              label: l.play,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.pets_rounded),
-              label: 'Cats',
+              icon: const Icon(Icons.pets_rounded),
+              label: l.cats,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.shopping_bag_rounded),
-              label: 'Shop',
+              icon: const Icon(Icons.shopping_bag_rounded),
+              label: l.shop,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.settings_rounded),
-              label: 'Settings',
+              icon: const Icon(Icons.settings_rounded),
+              label: l.settings,
             ),
           ],
         ),
@@ -160,7 +163,7 @@ class _MenuScreenState extends State<MenuScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'Purrfect Spots',
+                                    l.appTitle,
                                     style: CatCafeTheme.display(fontSize: 28),
                                   ),
                                 ],
@@ -218,7 +221,7 @@ class _MenuScreenState extends State<MenuScreen> {
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
                         child: Text(
-                          'Caf\u00e9 Areas',
+                          l.cafeAreas,
                           style: CatCafeTheme.display(fontSize: 20),
                         ),
                       ),
@@ -271,6 +274,7 @@ class _HeroContinueCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final theme = themeForFloor(level.floor);
 
     return Padding(
@@ -331,7 +335,7 @@ class _HeroContinueCard extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            theme.name,
+                            theme.localizedName(l),
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -339,7 +343,7 @@ class _HeroContinueCard extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            'Level ${level.floor}',
+                            l.levelN(level.floor),
                             style: TextStyle(
                               fontSize: 13,
                               color: Colors.white.withValues(alpha: 0.9),
@@ -370,7 +374,7 @@ class _HeroContinueCard extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              'Continue',
+                              l.continueButton,
                               style: CatCafeTheme.display(
                                 fontSize: 14,
                                 color: Colors.white,
@@ -406,6 +410,7 @@ class _CategoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: GestureDetector(
@@ -442,12 +447,12 @@ class _CategoryRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      theme.name,
+                      theme.localizedName(l),
                       style: CatCafeTheme.display(fontSize: 16),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '$completedCount/$totalCount cleared',
+                      l.clearedCount(completedCount, totalCount),
                       style: TextStyle(
                         fontSize: 13,
                         color: CatCafeTheme.darkText.withValues(alpha: 0.6),

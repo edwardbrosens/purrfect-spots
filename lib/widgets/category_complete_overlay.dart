@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:purrfect_spots/l10n/generated/app_localizations.dart';
 import '../config/level_themes.dart';
 import '../config/theme.dart';
 
@@ -50,6 +51,7 @@ class _CategoryCompleteOverlayState extends State<CategoryCompleteOverlay>
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final palette = widget.theme.palette;
     return Material(
       color: Colors.transparent,
@@ -169,7 +171,7 @@ class _CategoryCompleteOverlayState extends State<CategoryCompleteOverlay>
                           size: 48, color: Colors.white),
                       const SizedBox(height: 8),
                       Text(
-                        '${widget.theme.name} Complete!',
+                        l.categoryComplete(widget.theme.localizedName(l)),
                         textAlign: TextAlign.center,
                         style: CatCafeTheme.display(fontSize: 36).copyWith(
                           color: Colors.white,
@@ -177,7 +179,7 @@ class _CategoryCompleteOverlayState extends State<CategoryCompleteOverlay>
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Every cushion claimed · Floor ${widget.floor}',
+                        l.everyCushionClaimed(widget.floor),
                         style: TextStyle(
                           fontSize: 15,
                           color: Colors.white70,
@@ -197,7 +199,7 @@ class _CategoryCompleteOverlayState extends State<CategoryCompleteOverlay>
                     child: ElevatedButton.icon(
                       onPressed: widget.onDismiss,
                       icon: const Icon(Icons.arrow_forward_rounded),
-                      label: const Text('Continue'),
+                      label: Text(l.continueButton),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: widget.theme.color,
                         foregroundColor: CatCafeTheme.darkText,

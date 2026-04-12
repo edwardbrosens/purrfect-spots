@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:purrfect_spots/l10n/generated/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import '../config/theme.dart';
 import '../models/leaderboard_entry.dart';
@@ -66,10 +67,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: CatCafeTheme.background,
       appBar: AppBar(
-        title: const Text('Leaderboard'),
+        title: Text(l.leaderboard),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.go('/menu'),
@@ -78,9 +80,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
           controller: _tabController,
           labelColor: CatCafeTheme.darkText,
           indicatorColor: CatCafeTheme.darkText,
-          tabs: const [
-            Tab(text: 'Global'),
-            Tab(text: 'By Floor'),
+          tabs: [
+            Tab(text: l.global),
+            Tab(text: l.byFloor),
           ],
         ),
       ),
@@ -97,15 +99,16 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   }
 
   Widget _buildGlobalTab() {
+    final l = AppLocalizations.of(context)!;
     if (_globalRankings.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('🏆', style: TextStyle(fontSize: 48)),
-            SizedBox(height: 8),
-            Text('No rankings yet!', style: TextStyle(fontSize: 16)),
-            Text('Complete some levels to see rankings.'),
+            const Text('🏆', style: TextStyle(fontSize: 48)),
+            const SizedBox(height: 8),
+            Text(l.noRankingsYet, style: const TextStyle(fontSize: 16)),
+            Text(l.completeForRankings),
           ],
         ),
       );
@@ -118,15 +121,16 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
         final user = _globalRankings[index];
         return _RankingCard(
           rank: index + 1,
-          name: user.displayName ?? 'Cat Lover',
+          name: user.displayName ?? l.catLover,
           value: '${user.totalStars} ⭐',
-          subtitle: '${user.levelsCompleted} floors cleared',
+          subtitle: l.floorsCleared(user.levelsCompleted),
         );
       },
     );
   }
 
   Widget _buildLevelTab() {
+    final l = AppLocalizations.of(context)!;
     return Column(
       children: [
         // Level selector
@@ -138,7 +142,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
             items: _levels.map((level) {
               return DropdownMenuItem(
                 value: level.id,
-                child: Text('Floor ${level.floor} - ${level.name}'),
+                child: Text(l.floorNName(level.floor, level.name)),
               );
             }).toList(),
             onChanged: (value) {
@@ -152,8 +156,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
         // Rankings list
         Expanded(
           child: _levelRankings.isEmpty
-              ? const Center(
-                  child: Text('No rankings for this floor yet!'),
+              ? Center(
+                  child: Text(l.noRankingsForFloor),
                 )
               : ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16),

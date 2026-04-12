@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:purrfect_spots/l10n/generated/app_localizations.dart';
 import 'config/routes.dart';
 import 'config/theme.dart';
 import 'providers/auth_provider.dart';
@@ -42,6 +44,13 @@ class CatCafeApp extends StatelessWidget {
         theme: CatCafeTheme.themeData,
         routerConfig: appRouter,
         debugShowCheckedModeBanner: false,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
         builder: (context, child) => _ExitGuard(child: child ?? const SizedBox()),
       ),
     );
@@ -66,19 +75,20 @@ class _ExitGuard extends StatelessWidget {
           router.pop();
           return;
         }
+        final l = AppLocalizations.of(context)!;
         final shouldExit = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Exit Purrfect Spots?'),
-            content: const Text('Are you sure you want to leave the café?'),
+            title: Text(l.exitTitle),
+            content: Text(l.exitMessage),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text('Stay'),
+                child: Text(l.stay),
               ),
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(true),
-                child: const Text('Exit'),
+                child: Text(l.exit),
               ),
             ],
           ),

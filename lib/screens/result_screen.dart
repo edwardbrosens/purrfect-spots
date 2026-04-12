@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:purrfect_spots/l10n/generated/app_localizations.dart';
 import '../config/theme.dart';
 import '../models/level_data.dart';
 import '../widgets/star_rating.dart';
@@ -58,6 +59,7 @@ class _ResultScreenState extends State<ResultScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -90,7 +92,7 @@ class _ResultScreenState extends State<ResultScreen>
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Purrfect!',
+                      l.purrfect,
                       style:
                           Theme.of(context).textTheme.headlineMedium?.copyWith(
                                 color: CatCafeTheme.darkText,
@@ -99,7 +101,7 @@ class _ResultScreenState extends State<ResultScreen>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Floor ${widget.levelData.floor} - ${widget.levelData.name}',
+                      l.floorNName(widget.levelData.floor, widget.levelData.name),
                       style: TextStyle(
                         color: CatCafeTheme.darkText.withValues(alpha: 0.6),
                       ),
@@ -123,18 +125,18 @@ class _ResultScreenState extends State<ResultScreen>
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           _ResultStat(
-                              label: 'Moves', value: '${widget.moves}'),
+                              label: l.movesLabel, value: '${widget.moves}'),
                           _ResultStat(
-                              label: 'Cats',
+                              label: l.catsLabel,
                               value:
                                   '${widget.levelData.catStarts.length}'),
                           _ResultStat(
-                            label: 'Rating',
+                            label: l.ratingLabel,
                             value: widget.stars == 3
-                                ? 'Perfect!'
+                                ? l.ratingPerfect
                                 : widget.stars == 2
-                                    ? 'Great'
-                                    : 'Good',
+                                    ? l.ratingGreat
+                                    : l.ratingGood,
                           ),
                         ],
                       ),
@@ -149,7 +151,7 @@ class _ResultScreenState extends State<ResultScreen>
                           child: OutlinedButton.icon(
                             onPressed: widget.onRetry,
                             icon: const Icon(Icons.refresh_rounded),
-                            label: const Text('Retry'),
+                            label: Text(l.retry),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: CatCafeTheme.darkText,
                               padding:
@@ -166,7 +168,7 @@ class _ResultScreenState extends State<ResultScreen>
                           child: ElevatedButton.icon(
                             onPressed: widget.onNextLevel,
                             icon: const Icon(Icons.arrow_forward_rounded),
-                            label: const Text('Next Floor'),
+                            label: Text(l.nextFloor),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: CatCafeTheme.secondary,
                               foregroundColor: CatCafeTheme.darkText,
@@ -183,7 +185,7 @@ class _ResultScreenState extends State<ResultScreen>
                     const SizedBox(height: 8),
                     TextButton(
                       onPressed: widget.onLevelSelect,
-                      child: const Text('Back to Floor Select'),
+                      child: Text(l.backToFloorSelect),
                     ),
                   ],
                 ),

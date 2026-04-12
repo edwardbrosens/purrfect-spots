@@ -12,6 +12,7 @@ import '../providers/game_provider.dart';
 import '../providers/progress_provider.dart';
 import '../app.dart';
 import '../services/ad_service.dart';
+import 'package:purrfect_spots/l10n/generated/app_localizations.dart';
 import '../services/level_loader.dart';
 import '../widgets/hud_overlay.dart';
 import '../widgets/category_complete_overlay.dart';
@@ -154,10 +155,11 @@ class _GameScreenState extends State<GameScreen> {
       if (!_adService!.isRewardedReady) {
         _adService!.loadRewarded();
         if (mounted) {
+          final l = AppLocalizations.of(context)!;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Loading ad...'),
-              duration: Duration(seconds: 4),
+            SnackBar(
+              content: Text(l.loadingAd),
+              duration: const Duration(seconds: 4),
             ),
           );
         }
@@ -180,9 +182,10 @@ class _GameScreenState extends State<GameScreen> {
     // No ad service or ad still not available — grant for free
     grantUndos();
     if (mounted) {
+      final l = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('+${GameConstants.undosPerAd} undos'),
+          content: Text(l.plusUndosGranted(GameConstants.undosPerAd)),
           duration: const Duration(seconds: 1),
         ),
       );
@@ -195,21 +198,22 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Future<void> _showUndoPrompt() async {
+    final l = AppLocalizations.of(context)!;
     final result = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Out of undos!'),
+        title: Text(l.outOfUndos),
         content: Text(
-          'Watch a short video to earn ${GameConstants.undosPerAd} extra undos?',
+          l.watchAdForUndos(GameConstants.undosPerAd),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('No thanks'),
+            child: Text(l.noThanks),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text('Get ${GameConstants.undosPerAd} undos'),
+            child: Text(l.getUndos(GameConstants.undosPerAd)),
           ),
         ],
       ),
@@ -239,19 +243,20 @@ class _GameScreenState extends State<GameScreen> {
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
         final navContext = context;
+        final l = AppLocalizations.of(navContext)!;
         final shouldLeave = await showDialog<bool>(
           context: navContext,
           builder: (ctx) => AlertDialog(
-            title: const Text('Leave level?'),
-            content: const Text('Your progress on this level will be lost.'),
+            title: Text(l.leaveLevel),
+            content: Text(l.leaveLevelMessage),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text('Keep playing'),
+                child: Text(l.keepPlaying),
               ),
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(true),
-                child: const Text('Leave'),
+                child: Text(l.leave),
               ),
             ],
           ),
@@ -287,7 +292,7 @@ class _GameScreenState extends State<GameScreen> {
               child: HudOverlay(
                 levelName: _levelData!.name,
                 floorNumber: _levelData!.floor,
-                categoryName: themeForFloor(_levelData!.floor).name,
+                categoryName: themeForFloor(_levelData!.floor).localizedName(AppLocalizations.of(context)!),
                 onBack: () => context.go('/levels/${((_levelData!.floor - 1) ~/ 10).clamp(0, 9)}'),
               ),
             ),

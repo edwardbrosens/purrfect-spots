@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:purrfect_spots/l10n/generated/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../providers/game_provider.dart';
@@ -19,6 +20,7 @@ class HudOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final gameProvider = context.watch<GameProvider>();
 
     return Container(
@@ -47,7 +49,7 @@ class HudOverlay extends StatelessWidget {
                 onPressed: onBack,
                 icon: const Icon(Icons.arrow_back_rounded, size: 24),
                 color: CatCafeTheme.darkText,
-                tooltip: 'Back',
+                tooltip: l.back,
               ),
               Expanded(
                 child: Column(
@@ -63,7 +65,7 @@ class HudOverlay extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      'Level $floorNumber',
+                      l.levelN(floorNumber),
                       style: TextStyle(
                         fontSize: 12,
                         color: CatCafeTheme.darkText.withValues(alpha: 0.6),
@@ -80,7 +82,7 @@ class HudOverlay extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
             child: Text(
-              'MOVES  ${gameProvider.moveCount}',
+              l.moves(gameProvider.moveCount),
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
@@ -95,7 +97,7 @@ class HudOverlay extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: 4),
               child: Text(
-                'Swipe to move and push cats',
+                l.swipeHint,
                 style: TextStyle(
                   fontSize: 11,
                   color: CatCafeTheme.darkText.withValues(alpha: 0.4),
@@ -127,6 +129,7 @@ class GameBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final gameProvider = context.watch<GameProvider>();
     final outlineColor = CatCafeTheme.darkText.withValues(alpha: 0.3);
 
@@ -153,7 +156,7 @@ class GameBottomBar extends StatelessWidget {
           _BottomBarAction(
             onTap: onReset,
             icon: Icons.refresh_rounded,
-            label: 'Reset',
+            label: l.reset,
             outlineColor: outlineColor,
           ),
 
@@ -173,7 +176,7 @@ class GameBottomBar extends StatelessWidget {
             _BottomBarAction(
               onTap: onRequestUndos,
               icon: Icons.add_circle_outline_rounded,
-              label: '+10 Undos',
+              label: l.plusUndos(10),
               outlineColor: outlineColor,
             ),
           if (isPremium)
@@ -240,6 +243,7 @@ class _UndoButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final enabled = onTap != null;
     return GestureDetector(
       onTap: onTap,
@@ -303,7 +307,7 @@ class _UndoButton extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Undo',
+            l.undo,
             style: TextStyle(
               fontSize: 11,
               color: CatCafeTheme.darkText.withValues(alpha: 0.6),

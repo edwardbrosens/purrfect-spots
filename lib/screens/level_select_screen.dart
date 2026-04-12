@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:purrfect_spots/l10n/generated/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
@@ -64,6 +65,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final progress = context.watch<ProgressProvider>();
     final maxStars = _levels.length * 3;
     final earnedStars = _categoryStars(progress);
@@ -91,7 +93,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                         ),
                         const Spacer(),
                         Text(
-                          _theme.name,
+                          _theme.localizedName(l),
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -138,9 +140,9 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                           const SizedBox(height: 20),
 
                           // Levels section header
-                          const Text(
-                            'Levels',
-                            style: TextStyle(
+                          Text(
+                            l.levels,
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: CatCafeTheme.darkText,
@@ -212,9 +214,10 @@ class _HeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final subtitle = categoryIndex == 0
-        ? 'Floors $firstFloor-$lastFloor \u00b7 Tutorial'
-        : 'Floors $firstFloor-$lastFloor';
+        ? l.floorsRangeTutorial(firstFloor, lastFloor)
+        : l.floorsRange(firstFloor, lastFloor);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
@@ -265,7 +268,7 @@ class _HeroCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      theme.name,
+                      theme.localizedName(l),
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -304,9 +307,9 @@ class _ProgressBar extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Progress',
-              style: TextStyle(
+            Text(
+              AppLocalizations.of(context)!.progress,
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: CatCafeTheme.darkText,
@@ -448,6 +451,7 @@ class _BottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Container(
       decoration: BoxDecoration(
         color: CatCafeTheme.surface,
@@ -468,25 +472,25 @@ class _BottomNavBar extends StatelessWidget {
             children: [
               _NavItem(
                 icon: Icons.play_arrow_rounded,
-                label: 'Play',
+                label: l.play,
                 isActive: true,
                 onTap: () {},
               ),
               _NavItem(
                 icon: Icons.pets_rounded,
-                label: 'Cats',
+                label: l.cats,
                 isActive: false,
                 onTap: () {},
               ),
               _NavItem(
                 icon: Icons.store_rounded,
-                label: 'Shop',
+                label: l.shop,
                 isActive: false,
                 onTap: () {},
               ),
               _NavItem(
                 icon: Icons.settings_rounded,
-                label: 'Settings',
+                label: l.settings,
                 isActive: false,
                 onTap: () => context.go('/settings'),
               ),

@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 import '../providers/progress_provider.dart';
 import '../services/level_loader.dart';
 import '../services/purchase_service.dart';
+import 'package:purrfect_spots/l10n/generated/app_localizations.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -92,6 +93,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final size = MediaQuery.of(context).size;
     final imageSize = size.width * 0.65;
 
@@ -177,7 +179,7 @@ class _SplashScreenState extends State<SplashScreen>
                           child: Column(
                             children: [
                               Text(
-                                'Purrfect',
+                                l.splashTitle1,
                                 style: CatCafeTheme.display(
                                   fontSize: 52,
                                   color: CatCafeTheme.pinkAccent,
@@ -186,7 +188,7 @@ class _SplashScreenState extends State<SplashScreen>
                               Transform.translate(
                                 offset: const Offset(0, -8),
                                 child: Text(
-                                  'Spots',
+                                  l.splashTitle2,
                                   style: CatCafeTheme.display(
                                     fontSize: 52,
                                     color: CatCafeTheme.darkText,
@@ -253,7 +255,7 @@ class _SplashScreenState extends State<SplashScreen>
                         child: Column(
                           children: [
                             Text(
-                              'A cosy cat caf\u00e9 puzzle\ngame',
+                              l.splashSubtitle,
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 16,
