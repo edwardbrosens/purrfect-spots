@@ -4,9 +4,7 @@
 <dict>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-9288944682433583~6022992252</string>
-	<key>NSUserTrackingUsageDescription</key>
-	<string>This identifier will be used to show you personalised ads.</string>
-	<key>SKAdNetworkItems</key>
+<key>SKAdNetworkItems</key>
 	<array>
 		<dict>
 			<key>SKAdNetworkIdentifier</key>
