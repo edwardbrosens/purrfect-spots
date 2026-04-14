@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:purrfect_spots/l10n/generated/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../config/theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/locale_provider.dart';
@@ -351,6 +352,44 @@ class _PremiumCard extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
               ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: () => launchUrl(Uri.parse('https://edwardbrosens.github.io/purrfect-spots/')),
+                  child: Text(
+                    l.privacyPolicy,
+                    style: TextStyle(
+                      color: CatCafeTheme.darkText.withValues(alpha: 0.5),
+                      fontSize: 12,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    '·',
+                    style: TextStyle(
+                      color: CatCafeTheme.darkText.withValues(alpha: 0.5),
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => launchUrl(Uri.parse('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')),
+                  child: Text(
+                    l.termsOfUse,
+                    style: TextStyle(
+                      color: CatCafeTheme.darkText.withValues(alpha: 0.5),
+                      fontSize: 12,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),

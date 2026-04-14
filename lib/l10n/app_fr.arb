@@ -81,6 +81,7 @@
   "createAccount": "Créer un compte",
   "or": "ou",
   "continueWithGoogle": "Continuer avec Google",
+  "continueWithApple": "Continuer avec Apple",
 
   "premium": "Premium",
   "premiumActive": "Premium Actif",
@@ -132,5 +133,14 @@
   "productNotAvailable": "Produit non disponible",
   "purchaseFailed": "Achat échoué",
   "firebaseNotReady": "Firebase non prêt",
-  "signInCancelled": "Connexion annulée"
+  "signInCancelled": "Connexion annulée",
+
+  "deleteAccount": "Supprimer le compte",
+  "deleteAccountTitle": "Supprimer le compte ?",
+  "deleteAccountMessage": "Cela supprimera définitivement ton compte, ta progression et toutes tes données. Cette action est irréversible.",
+  "deleteAccountConfirm": "Supprimer définitivement",
+  "accountDeleted": "Compte supprimé.",
+
+  "privacyPolicy": "Politique de confidentialité",
+  "termsOfUse": "Conditions d'utilisation"
 }

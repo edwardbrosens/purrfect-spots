@@ -58,6 +58,45 @@ class _AccountScreenState extends State<AccountScreen> {
     }
   }
 
+  Future<void> _confirmDeleteAccount(AuthProvider auth) async {
+    final l = AppLocalizations.of(context)!;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l.deleteAccountTitle),
+        content: Text(l.deleteAccountMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text(l.deleteAccountConfirm),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    if (!mounted) return;
+    final err = await auth.deleteAccount();
+    if (!mounted) return;
+    if (err != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(err)),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l.accountDeleted),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      context.go('/settings');
+    }
+  }
+
   Future<void> _confirmSignOut(AuthProvider auth) async {
     final l = AppLocalizations.of(context)!;
     final ok = await showDialog<bool>(
@@ -171,6 +210,16 @@ class _AccountScreenState extends State<AccountScreen> {
         onPressed: () => _confirmSignOut(auth),
         icon: const Icon(Icons.logout_rounded),
         label: Text(l.signOut),
+      ),
+      const SizedBox(height: 12),
+      OutlinedButton.icon(
+        onPressed: () => _confirmDeleteAccount(auth),
+        icon: const Icon(Icons.delete_forever_rounded, color: Colors.red),
+        label: Text(l.deleteAccount,
+            style: const TextStyle(color: Colors.red)),
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: Colors.red),
+        ),
       ),
     ];
   }
@@ -309,6 +358,33 @@ class _AccountScreenState extends State<AccountScreen> {
                 },
           icon: const Icon(Icons.g_mobiledata_rounded, size: 28),
           label: Text(l.continueWithGoogle),
+        ),
+      ),
+      const SizedBox(height: 12),
+      SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: auth.isLoading
+              ? null
+              : () async {
+                  final err = await auth.signInWithApple(
+                    username: _userCtl.text.trim().isEmpty
+                        ? null
+                        : _userCtl.text.trim(),
+                  );
+                  if (!mounted) return;
+                  if (err != null) {
+                    setState(() => _error = err);
+                    return;
+                  }
+                  if (!auth.isAnonymous) {
+                    await context.read<ProgressProvider>().initialize(auth.uid);
+                    if (!mounted) return;
+                    context.go('/settings');
+                  }
+                },
+          icon: const Icon(Icons.apple_rounded, size: 28),
+          label: Text(l.continueWithApple),
         ),
       ),
     ];

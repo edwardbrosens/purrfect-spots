@@ -81,6 +81,7 @@
   "createAccount": "Account aanmaken",
   "or": "of",
   "continueWithGoogle": "Doorgaan met Google",
+  "continueWithApple": "Doorgaan met Apple",
 
   "premium": "Premium",
   "premiumActive": "Premium Actief",
@@ -132,5 +133,14 @@
   "productNotAvailable": "Product niet beschikbaar",
   "purchaseFailed": "Aankoop mislukt",
   "firebaseNotReady": "Firebase niet gereed",
-  "signInCancelled": "Inloggen geannuleerd"
+  "signInCancelled": "Inloggen geannuleerd",
+
+  "deleteAccount": "Account verwijderen",
+  "deleteAccountTitle": "Account verwijderen?",
+  "deleteAccountMessage": "Dit verwijdert permanent je account, voortgang en alle gegevens. Dit kan niet ongedaan worden gemaakt.",
+  "deleteAccountConfirm": "Definitief verwijderen",
+  "accountDeleted": "Account verwijderd.",
+
+  "privacyPolicy": "Privacybeleid",
+  "termsOfUse": "Gebruiksvoorwaarden"
 }

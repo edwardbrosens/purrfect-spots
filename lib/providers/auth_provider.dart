@@ -112,6 +112,31 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<String?> signInWithApple({String? username}) async {
+    if (!firebaseReady) return 'Firebase not ready';
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final user = await _authService.signInWithApple();
+      if (user == null) return 'Sign-in cancelled';
+      _user = user;
+      final name = (username != null && username.trim().isNotEmpty)
+          ? username.trim()
+          : (user.displayName ?? user.email?.split('@').first ?? 'Cat Lover');
+      await _ensureProfile(user, name, 'apple');
+      return null;
+    } on FirebaseAuthException catch (e) {
+      return e.message ?? e.code;
+    } catch (e) {
+      return e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<String?> signUpWithEmail({
     required String email,
     required String password,
@@ -231,5 +256,21 @@ class AuthProvider extends ChangeNotifier {
   Future<void> signOut() async {
     if (!firebaseReady) return;
     await _authService.signOut();
+  }
+
+  /// Permanently delete the user's account and all associated data.
+  Future<String?> deleteAccount() async {
+    if (!firebaseReady || _user == null) return 'Not signed in';
+    try {
+      final uid = _user!.uid;
+      await _firestoreService.deleteUserData(uid);
+      await _authService.deleteAccount();
+      _user = null;
+      _profile = null;
+      notifyListeners();
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
   }
 }

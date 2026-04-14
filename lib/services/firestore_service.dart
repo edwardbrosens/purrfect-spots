@@ -117,6 +117,14 @@ class FirestoreService {
     });
   }
 
+  /// Delete all user data (profile + progress).
+  Future<void> deleteUserData(String uid) async {
+    // Delete user profile
+    await _db.collection('users').doc(uid).delete();
+    // Delete all progress
+    await deleteAllProgress(uid);
+  }
+
   // ── Leaderboards ──────────────────────────────────────────
 
   Future<void> submitLeaderboardEntry(LeaderboardEntry entry) async {

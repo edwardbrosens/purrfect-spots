@@ -241,6 +241,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get continueWithGoogle => 'Continuer avec Google';
 
   @override
+  String get continueWithApple => 'Continuer avec Apple';
+
+  @override
   String get premium => 'Premium';
 
   @override
@@ -383,4 +386,26 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get signInCancelled => 'Connexion annulée';
+
+  @override
+  String get deleteAccount => 'Supprimer le compte';
+
+  @override
+  String get deleteAccountTitle => 'Supprimer le compte ?';
+
+  @override
+  String get deleteAccountMessage =>
+      'Cela supprimera définitivement ton compte, ta progression et toutes tes données. Cette action est irréversible.';
+
+  @override
+  String get deleteAccountConfirm => 'Supprimer définitivement';
+
+  @override
+  String get accountDeleted => 'Compte supprimé.';
+
+  @override
+  String get privacyPolicy => 'Politique de confidentialité';
+
+  @override
+  String get termsOfUse => 'Conditions d\'utilisation';
 }

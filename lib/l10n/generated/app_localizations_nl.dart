@@ -241,6 +241,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get continueWithGoogle => 'Doorgaan met Google';
 
   @override
+  String get continueWithApple => 'Doorgaan met Apple';
+
+  @override
   String get premium => 'Premium';
 
   @override
@@ -384,4 +387,26 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get signInCancelled => 'Inloggen geannuleerd';
+
+  @override
+  String get deleteAccount => 'Account verwijderen';
+
+  @override
+  String get deleteAccountTitle => 'Account verwijderen?';
+
+  @override
+  String get deleteAccountMessage =>
+      'Dit verwijdert permanent je account, voortgang en alle gegevens. Dit kan niet ongedaan worden gemaakt.';
+
+  @override
+  String get deleteAccountConfirm => 'Definitief verwijderen';
+
+  @override
+  String get accountDeleted => 'Account verwijderd.';
+
+  @override
+  String get privacyPolicy => 'Privacybeleid';
+
+  @override
+  String get termsOfUse => 'Gebruiksvoorwaarden';
 }

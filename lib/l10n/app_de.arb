@@ -81,6 +81,7 @@
   "createAccount": "Konto erstellen",
   "or": "oder",
   "continueWithGoogle": "Weiter mit Google",
+  "continueWithApple": "Weiter mit Apple",
 
   "premium": "Premium",
   "premiumActive": "Premium Aktiv",
@@ -132,5 +133,14 @@
   "productNotAvailable": "Produkt nicht verfügbar",
   "purchaseFailed": "Kauf fehlgeschlagen",
   "firebaseNotReady": "Firebase nicht bereit",
-  "signInCancelled": "Anmeldung abgebrochen"
+  "signInCancelled": "Anmeldung abgebrochen",
+
+  "deleteAccount": "Konto löschen",
+  "deleteAccountTitle": "Konto löschen?",
+  "deleteAccountMessage": "Dies löscht dauerhaft dein Konto, deinen Fortschritt und alle Daten. Dies kann nicht rückgängig gemacht werden.",
+  "deleteAccountConfirm": "Endgültig löschen",
+  "accountDeleted": "Konto gelöscht.",
+
+  "privacyPolicy": "Datenschutz",
+  "termsOfUse": "Nutzungsbedingungen"
 }
