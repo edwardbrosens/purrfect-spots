@@ -382,7 +382,7 @@ class _PremiumCard extends StatelessWidget {
                   ),
                 ),
                 GestureDetector(
-                  onTap: () => launchUrl(Uri.parse('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')),
+                  onTap: () => launchUrl(Uri.parse('https://edwardbrosens.github.io/purrfect-spots/terms.html')),
                   child: Text(
                     l.termsOfUse,
                     style: TextStyle(
