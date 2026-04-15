@@ -52,7 +52,11 @@ class SettingsScreen extends StatelessWidget {
                   subtitle: Text(
                     authProvider.isAnonymous
                         ? l.playingAsGuest
-                        : l.signedInWithGoogle,
+                        : (authProvider.profile?.authProvider.contains('apple') ?? false)
+                            ? l.signedInWithApple
+                            : (authProvider.profile?.authProvider == 'password')
+                                ? l.signedInWithEmail
+                                : l.signedInWithGoogle,
                   ),
                 ),
                 Padding(

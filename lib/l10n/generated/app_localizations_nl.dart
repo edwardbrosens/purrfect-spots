@@ -187,6 +187,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get signedInWithGoogle => 'Ingelogd met Google';
 
   @override
+  String get signedInWithApple => 'Ingelogd met Apple';
+
+  @override
+  String get signedInWithEmail => 'Ingelogd met e-mail';
+
+  @override
   String get signInSignUp => 'Inloggen / Registreren';
 
   @override

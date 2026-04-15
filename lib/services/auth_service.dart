@@ -1,10 +1,5 @@
-import 'dart:convert';
-import 'dart:math';
-
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-import 'package:crypto/crypto.dart';
 
 /// Wraps Firebase Auth — anonymous + Google sign-in with account linking.
 class AuthService {
@@ -72,56 +67,35 @@ class AuthService {
     }
   }
 
-  /// Generate a cryptographically secure random nonce.
-  String _generateNonce([int length = 32]) {
-    const charset =
-        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
-    final random = Random.secure();
-    return List.generate(length, (_) => charset[random.nextInt(charset.length)])
-        .join();
-  }
 
-  /// SHA-256 hash of a string, returned as a hex string.
-  String _sha256ofString(String input) {
-    final bytes = utf8.encode(input);
-    final digest = sha256.convert(bytes);
-    return digest.toString();
-  }
-
-  /// Sign in with Apple, linking to anonymous account if possible.
+  /// Sign in with Apple using Firebase's built-in provider flow.
   Future<User?> signInWithApple() async {
     try {
-      final rawNonce = _generateNonce();
-      final nonce = _sha256ofString(rawNonce);
-
-      final appleCredential = await SignInWithApple.getAppleIDCredential(
-        scopes: [
-          AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName,
-        ],
-        nonce: nonce,
-      );
-
-      final oauthCredential = OAuthProvider('apple.com').credential(
-        idToken: appleCredential.identityToken,
-        rawNonce: rawNonce,
-      );
+      final appleProvider = AppleAuthProvider()
+        ..addScope('email')
+        ..addScope('name');
 
       if (_auth.currentUser?.isAnonymous == true) {
         try {
           final result =
-              await _auth.currentUser!.linkWithCredential(oauthCredential);
+              await _auth.currentUser!.linkWithProvider(appleProvider);
           return result.user;
         } on FirebaseAuthException catch (e) {
-          if (e.code != 'credential-already-in-use' &&
-              e.code != 'email-already-in-use') {
+          if (e.code == 'credential-already-in-use' ||
+              e.code == 'email-already-in-use') {
+            // Reuse the credential from the failed link — no second popup
+            if (e.credential != null) {
+              final result =
+                  await _auth.signInWithCredential(e.credential!);
+              return result.user;
+            }
+          } else {
             rethrow;
           }
-          // Fall through and sign in directly
         }
       }
 
-      final result = await _auth.signInWithCredential(oauthCredential);
+      final result = await _auth.signInWithProvider(appleProvider);
       return result.user;
     } on FirebaseAuthException catch (e) {
       debugPrint('Firebase Apple auth failed: ${e.code} ${e.message}');
@@ -132,7 +106,8 @@ class AuthService {
       }
       rethrow;
     } catch (e) {
-      if (e.toString().contains('AuthorizationErrorCode.canceled')) {
+      if (e.toString().contains('AuthorizationErrorCode.canceled') ||
+          e.toString().contains('AuthorizationErrorCode.unknown')) {
         return null;
       }
       debugPrint('signInWithApple error: $e');

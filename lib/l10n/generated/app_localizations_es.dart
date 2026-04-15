@@ -187,6 +187,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get signedInWithGoogle => 'Conectado con Google';
 
   @override
+  String get signedInWithApple => 'Conectado con Apple';
+
+  @override
+  String get signedInWithEmail => 'Conectado con correo';
+
+  @override
   String get signInSignUp => 'Iniciar sesión / Registrarse';
 
   @override

@@ -60,13 +60,28 @@ class AuthProvider extends ChangeNotifier {
               uid: user.uid,
               displayName: user.displayName,
               avatarUrl: user.photoURL,
-              authProvider: user.isAnonymous ? 'anonymous' : 'google',
+              authProvider: user.isAnonymous
+                  ? 'anonymous'
+                  : user.providerData.isNotEmpty
+                      ? user.providerData.first.providerId
+                      : 'unknown',
               createdAt: DateTime.now(),
             );
             await _firestoreService.createOrUpdateUser(_profile!);
+          } else {
+            // Sync authProvider if it changed (e.g. linked Apple after Google)
+            final currentProvider = user.isAnonymous
+                ? 'anonymous'
+                : user.providerData.isNotEmpty
+                    ? user.providerData.first.providerId
+                    : _profile!.authProvider;
+            if (_profile!.authProvider != currentProvider) {
+              _profile = _profile!.copyWith(authProvider: currentProvider);
+              await _firestoreService.createOrUpdateUser(_profile!);
+            }
           }
         } catch (e) {
-          debugPrint('Firestore error: $e');
+          debugPrint('AUTH: Firestore error in authStateChanges: $e');
         }
       }
       _isLoading = false;

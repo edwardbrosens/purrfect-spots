@@ -62,6 +62,8 @@
   "account": "Cuenta",
   "playingAsGuest": "Jugando como invitado",
   "signedInWithGoogle": "Conectado con Google",
+  "signedInWithApple": "Conectado con Apple",
+  "signedInWithEmail": "Conectado con correo",
   "signInSignUp": "Iniciar sesión / Registrarse",
   "manageAccount": "Gestionar cuenta",
   "signOut": "Cerrar sesión",

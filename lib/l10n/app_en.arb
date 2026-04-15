@@ -73,6 +73,8 @@
   "account": "Account",
   "playingAsGuest": "Playing as guest",
   "signedInWithGoogle": "Signed in with Google",
+  "signedInWithApple": "Signed in with Apple",
+  "signedInWithEmail": "Signed in with email",
   "signInSignUp": "Sign in / Sign up",
   "manageAccount": "Manage account",
   "signOut": "Sign out",

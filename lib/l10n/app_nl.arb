@@ -62,6 +62,8 @@
   "account": "Account",
   "playingAsGuest": "Speelt als gast",
   "signedInWithGoogle": "Ingelogd met Google",
+  "signedInWithApple": "Ingelogd met Apple",
+  "signedInWithEmail": "Ingelogd met e-mail",
   "signInSignUp": "Inloggen / Registreren",
   "manageAccount": "Account beheren",
   "signOut": "Uitloggen",
